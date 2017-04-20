@@ -14,12 +14,12 @@
     "challenge_cancel_ssml": "Your challenge to a friend was cancelled",
     "question_title": "Spelling Bee - Round %d",
     "question_subtitle": "Please pay attention to this round's word. When you are ready, say or type your response, or select one of the following options:",
-    "question_ssml": "Please pay attention for the next word. This round's word is %s.",
+    "question_ssml": "Here is the word for the current round, please pay attention... %s.",
     "definition_subtitle": "This round's word has a following definition: %s",
     "sentence_subtitle": "Here is an example sentence for this round's word: %s",
     "finalscore_title": "Spelling Bee - Final score",
     "finalscore_subtitle": "Thanks for playing Spelling Bee! Your score is %d (out of possible %d).",
     "answer_correct_title": "Correct!",
     "answer_incorrect_title": "Oops!",
-    "answer_subtitle": "Your answer was %s. The correct answer was %s."
+    "answer_subtitle": "Your answer was %s.\n\nThe correct answer was %s.\n\nYour score so far is %d."
 }

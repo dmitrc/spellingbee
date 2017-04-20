@@ -117,8 +117,9 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
         session.send(msg);
     })
-    .matches(/finish/i, function (session) {
-        var game = session.conversationData.game;
+    .matches(/finish/i, function (session, args) {
+        args = args || {};
+        var game = args.game || session.conversationData.game;
 
         var title = session.gettext('finalscore_title');
         var subtitle = session.gettext('finalscore_subtitle', game.score, game.turn - 1);
@@ -147,8 +148,9 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         else {
             // A game is already in progress, need to show the results first
             var resp = session.message ? session.message.text : "";
-            var isCorrect = util.checkAnswer(game.lastWord, resp);
             var answer = util.getAnswer(game.lastWord);
+
+            var isCorrect = resp.toUpperCase().indexOf(answer.toUpperCase()) > -1;
 
             if (isCorrect) {
                 game.score++;
@@ -156,7 +158,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             }
 
             var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
-            var subtitle = session.gettext("answer_subtitle", resp, answer);
+            var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
 
             var card = new builder.HeroCard(session)
                 .title(title)
