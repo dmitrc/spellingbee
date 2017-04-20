@@ -13,6 +13,6 @@
     "challenge_success_ssml": "You have successfully challenged a friend!",
     "challenge_cancel_ssml": "Your challenge to a friend was cancelled",
     "question_title": "Spelling Bee - Round %d",
-    "question_subtitle": "Your word is %s. Please spell it",
-    "question_ssml": "Your word is %s. Please spell it"
+    "question_subtitle": "Please pay attention to this round's word. When you are ready, say or type your response, or select one of the following options:",
+    "question_ssml": "Please pay attention for the next word. This round's word is %s."
 }

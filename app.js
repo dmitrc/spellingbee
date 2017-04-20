@@ -5,8 +5,8 @@ var util = require('./util');
 var ssml = require('./ssml');
 var config = require('./config');
 
-function speak(session, prompt) {
-    var localized = session.gettext(prompt);
+function speak(session, prompt, vars) {
+    var localized = session.gettext(prompt, vars);
     return ssml.speak(localized);
 }
 
@@ -47,35 +47,104 @@ bot.dialog('MenuDialog', function (session) {
     ]
 });
 
-bot.dialog('GameDialog', [
-    function (session, args) {
-        var game = args.game || session.conversationData.game;
+bot.dialog('GameDialog', new builder.IntentDialog()
+    .matches(/define/i, function (session) {
+         var card = new builder.HeroCard(session)
+            .title("Debug")
+            .subtitle("Chose define option");
+        var msg = new builder.Message(session)
+            .speak("Debug")
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+
+        session.send(msg);
+    })
+    .matches(/repeat/i, function (session) {
+         var card = new builder.HeroCard(session)
+            .title("Debug")
+            .subtitle("Chose repeat option");
+        var msg = new builder.Message(session)
+            .speak("Debug")
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+
+        session.send(msg);
+    })
+    .matches(/sentence/i, function (session) {
+         var card = new builder.HeroCard(session)
+            .title("Debug")
+            .subtitle("Chose sentence option");
+        var msg = new builder.Message(session)
+            .speak("Debug")
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+
+        session.send(msg);
+    })
+    .matches(/finish/i, function (session) {
+         var card = new builder.HeroCard(session)
+            .title("Debug")
+            .subtitle("Chose abort option");
+        var msg = new builder.Message(session)
+            .speak("Debug")
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+
+        session.send(msg).endDialog();
+    })
+    .onDefault(function (session) {
+        var game = session.conversationData.game;
 
         if (!game) {
             game = {
                 turn: 0,
-                lastWord: ""
+                score: 0,
+                lastWord: "",
+                opponent: null
             }
+        }
+        else {
+            // A game is already in progress, need to show the results first
+            var resp = session.message ? session.message.text : "";
+            
+            var card = new builder.HeroCard(session)
+                .title("Debug")
+                .subtitle("You've answered \"" + resp + "\" for previous round. Moving on...");
+            var msg = new builder.Message(session)
+                .speak("Debug")
+                .addAttachment(card)
+                .inputHint(builder.InputHint.acceptingInput);
+
+            session.send(msg);
         }
 
         var word = util.getSurvivalWord();
-        var title = session.gettext('question_title', game.turn + 1);
-        var subtitle = session.gettext('question_subtitle', word);
-
-        var card = new builder.HeroCard(session)
-            .title(title)
-            .subtitle(subtitle);
-        var msg = new builder.Message(session)
-            .speak(speak(session, 'question_ssml'))
-            .addAttachment(card)
-            .inputHint(builder.InputHint.acceptingInput);
+        var title = session.gettext('question_title', game.turn);
+        var subtitle = session.gettext('question_subtitle');
+        var ssml = speak(session, 'question_ssml', word);
 
         game.lastWord = word;
         game.turn++;
+        session.conversationData.game = game;
 
-        session.send(msg).endDialog();
-    }
-]).triggerAction({
+        var card = new builder.HeroCard(session)
+            .title(title)
+            .subtitle(subtitle)
+            .buttons([
+                builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
+                builder.CardAction.imBack(session, 'define', "Request definition"),
+                builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
+                builder.CardAction.imBack(session, 'finish', "Finish game")
+            ]);
+        var msg = new builder.Message(session)
+            .speak(ssml)
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+
+        session.send(msg);
+    })
+)
+.triggerAction({
     matches: [
         /new game/i,
         /start game/i
