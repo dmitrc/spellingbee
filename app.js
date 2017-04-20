@@ -148,9 +148,12 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         else {
             // A game is already in progress, need to show the results first
             var resp = session.message ? session.message.text : "";
-            var answer = util.getAnswer(game.lastWord);
+            var answer = game.lastWord;
 
-            var isCorrect = resp.toUpperCase().indexOf(answer.toUpperCase()) > -1;
+            // (!) When spelling letter by letter, Cortana will send uppercase: SAMPLE
+            // Need a way to distinguish between that, typing the answer and cheating 
+            // (so pronouncing the word itself in Cortana)
+            var isCorrect = resp.toLowerCase().indexOf(answer.toLowerCase()) > -1;
 
             if (isCorrect) {
                 game.score++;
