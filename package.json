@@ -1,0 +1,24 @@
+{
+  "name": "spellingbee",
+  "version": "1.0.0",
+  "description": "Spelling bee bot and skill for Cortana",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmitryfd/spellingbee.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dmitryfd/spellingbee/issues"
+  },
+  "homepage": "https://github.com/dmitryfd/spellingbee#readme",
+  "dependencies": {
+    "botbuilder": "^3.7.0",
+    "restify": "^4.3.0",
+    "sprintf-js": "^1.0.3"
+  }
+}

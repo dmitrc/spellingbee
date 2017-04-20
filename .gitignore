@@ -1,3 +1,6 @@
+# Production configuration
+config.js
+
 # Logs
 logs
 *.log
