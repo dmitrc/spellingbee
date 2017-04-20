@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/dmitryfd/spellingbee#readme",
   "dependencies": {
-    "botbuilder": "^3.7.0",
+    "botbuilder": "^3.8.0-beta2",
     "restify": "^4.3.0",
     "sprintf-js": "^1.0.3"
   }
