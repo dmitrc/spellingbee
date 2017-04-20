@@ -5,6 +5,7 @@ Roller is a dice rolling skill that's been optimized for speech.
 var restify = require('restify');
 var builder = require('botbuilder');
 var ssml = require('./ssml');
+var config = require('./config');
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -14,8 +15,8 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
   
 // Create chat connector for communicating with the Bot Framework Service
 var connector = new builder.ChatConnector({
-    appId: process.env.MICROSOFT_APP_ID,
-    appPassword: process.env.MICROSOFT_APP_PASSWORD
+    appId: config.appId,
+    appPassword: config.appPassword
 });
 
 // Listen for messages from users 
