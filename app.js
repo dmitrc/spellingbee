@@ -307,42 +307,42 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
 
         function (session, results) {
             var token = results.response;
-            var isValid = util.validateChallengeToken(token);
+            util.validateToken(token, function (valid) {
+                if (valid) {
+                    session.conversationData.token = token;
 
-            if (isValid) {
-                session.conversationData.token = token;
+                    var card = new builder.HeroCard(session)
+                        .title('challenge_title')
+                        .subtitle('challenge_success')
+                        .buttons([
+                            builder.CardAction.imBack(session, 'start', 'Start challenge'),
+                            builder.CardAction.imBack(session, 'menu', 'Cancel')
+                        ]);
 
-                var card = new builder.HeroCard(session)
-                    .title('challenge_title')
-                    .subtitle('challenge_success')
-                    .buttons([
-                        builder.CardAction.imBack(session, 'start', 'Start challenge'),
-                        builder.CardAction.imBack(session, 'menu', 'Cancel')
-                    ]);
+                    var msg = new builder.Message(session)
+                        .speak(speak(session, 'challenge_success'))
+                        .addAttachment(card)
+                        .inputHint(builder.InputHint.acceptingInput);
 
-                var msg = new builder.Message(session)
-                    .speak(speak(session, 'challenge_success'))
-                    .addAttachment(card)
-                    .inputHint(builder.InputHint.acceptingInput);
+                    session.send(msg);
+                }
+                else {
+                    var card = new builder.HeroCard(session)
+                        .title('challenge_title')
+                        .subtitle('challenge_failure')
+                        .buttons([
+                            builder.CardAction.imBack(session, 'join', 'Try again'),
+                            builder.CardAction.imBack(session, 'menu', 'Back to menu')
+                        ]);
 
-                session.send(msg);
-            }
-            else {
-                var card = new builder.HeroCard(session)
-                    .title('challenge_title')
-                    .subtitle('challenge_failure')
-                    .buttons([
-                        builder.CardAction.imBack(session, 'join', 'Try again'),
-                        builder.CardAction.imBack(session, 'menu', 'Back to menu')
-                    ]);
+                    var msg = new builder.Message(session)
+                        .speak(speak(session, 'challenge_failure'))
+                        .addAttachment(card)
+                        .inputHint(builder.InputHint.acceptingInput);
 
-                var msg = new builder.Message(session)
-                    .speak(speak(session, 'challenge_failure'))
-                    .addAttachment(card)
-                    .inputHint(builder.InputHint.acceptingInput);
-
-                session.send(msg);
-            }
+                    session.send(msg);
+                }
+            });
         }
     ])
     .matches(/create|new/i, function (session) {

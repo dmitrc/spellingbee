@@ -227,9 +227,10 @@ util.addToLeaderboard = function (name, token, words, score, callback) {
         });
 }
 
-util.validateChallengeToken = function (token) {
-    // Debug logic
-    return token.toLowerCase().indexOf("d") > -1;
+util.validateToken = function (token, callback) {
+    // callback: (valid) => void
+    // debug logic: valid if has 0 in it
+    callback(token.indexOf('0') > -1);
 }
 
 util.getDefinition = function (word, callback) {
