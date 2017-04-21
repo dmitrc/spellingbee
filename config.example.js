@@ -1,4 +1,10 @@
-module.exports = {
-    "appId" : "",
-    "appPassword" : ""
-}
+module.exports = {
+    "appId": "",
+    "appPassword": "",
+    "dbEndpoint": "",
+    "dbKey": "",
+    "dbSProc": {
+        "getRandomWord": ""
+    },
+    "dictionaryApiKey": ""
+};
