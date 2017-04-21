@@ -139,90 +139,97 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         session.send(msg).endDialog();
 
         // TODO: Get name from Cortana entities
-        util.addToLeaderboard("name", game.score);
+        util.addToLeaderboard("name", game.challengeToken, game.words, game.score, function() {});
     })
     .onDefault(function (session, args) {
-        var game = {
-            turn: 0,
-            score: 0,
-            lastWord: null,
-            challengeToken: null
-        };
         
-        //TODO: Figure out why arguments don't get passed here from ChallengeDialog
-        if (args && args.game) {
-            game = args.game;
-        }
-
-        if (session.conversationData.game) {
-            game = session.conversationData.game;
-        }
-
-        var resp = session.message ? session.message.text : "";
-        if (game.lastWord && resp.indexOf('next') < 0) {
-            // A game is already in progress, at least one word was shown, 
-            // and didn't request the next one yet, need to show the results first.
-            var answer = game.lastWord;
-
-            // (!) When spelling letter by letter, Cortana will send uppercase: "SAMPLE"
-            // Need a way to distinguish between that, typing the answer and cheating 
-            // (so pronouncing the word itself in Cortana : "sample")
-            var isCorrect = resp.toLowerCase().indexOf(answer.toLowerCase()) > -1;
-
-            if (isCorrect) {
-                game.score++;
-                session.conversationData.game = game;
+        util.generateToken(function(err, token) {
+            var game = {
+                turn: 0,
+                score: 0,
+                lastWord: null,
+                words: [],
+                challengeToken: token
+            };
+            
+            //TODO: Figure out why arguments don't get passed here from ChallengeDialog
+            if (args && args.game) {
+                game = args.game;
             }
 
-            var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
-            var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
+            if (session.conversationData.game) {
+                game = session.conversationData.game;
+            }
 
-            if (game.challengeToken) {
-                var score = util.getChallengeScore();
-                if (score >= 0) {
-                    // Won't be printed if no score is available yet (-1)
-                    subtitle += "\n\n" + session.gettext("challenge_score", score);
+            var resp = session.message ? session.message.text : "";
+            if (game.lastWord && resp.indexOf('next') < 0) {
+                // A game is already in progress, at least one word was shown, 
+                // and didn't request the next one yet, need to show the results first.
+                var answer = game.lastWord;
+
+                // (!) When spelling letter by letter, Cortana will send uppercase: "SAMPLE"
+                // Need a way to distinguish between that, typing the answer and cheating 
+                // (so pronouncing the word itself in Cortana : "sample")
+                var isCorrect = resp.toLowerCase().indexOf(answer.toLowerCase()) > -1;
+
+                if (isCorrect) {
+                    game.score++;
+                    session.conversationData.game = game;
                 }
+
+                var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
+                var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
+
+                if (game.challengeToken) {
+                    var score = util.getChallengeScore();
+                    if (score >= 0) {
+                        // Won't be printed if no score is available yet (-1)
+                        subtitle += "\n\n" + session.gettext("challenge_score", score);
+                    }
+                }
+
+                var card = new builder.HeroCard(session)
+                    .title(title)
+                    .subtitle(subtitle)
+                    .buttons([
+                        builder.CardAction.imBack(session, 'next round', 'Next round'),
+                        builder.CardAction.imBack(session, 'finish', 'Finish game')
+                    ]);
+                
+                var msg = new builder.Message(session)
+                    .speak(subtitle)
+                    .addAttachment(card)
+                    .inputHint(builder.InputHint.acceptingInput);
+
+                session.send(msg);
+                return;
             }
 
-            var card = new builder.HeroCard(session)
-                .title(title)
-                .subtitle(subtitle)
-                .buttons([
-                    builder.CardAction.imBack(session, 'next round', 'Next round'),
-                    builder.CardAction.imBack(session, 'finish', 'Finish game')
-                ]);
-            
-            var msg = new builder.Message(session)
-                .speak(subtitle)
-                .addAttachment(card)
-                .inputHint(builder.InputHint.acceptingInput);
+            //TODO: Or get challenge word, if needed
+            util.getSurvivalWord(7, function(err, word) {
+                var title = session.gettext('question_title', game.turn + 1);
+                var subtitle = session.gettext('question_subtitle');
+                var ssml = speak(session, 'question_ssml', word);
 
-            session.send(msg);
-            return;
-        }
+                game.turn++;
+                if(game.lastWord) {
+                    game.words.push(game.lastWord);
+                }
+                game.lastWord = word;
+                session.conversationData.game = game;
 
-        //TODO: Or get challenge word, if needed
-        util.getSurvivalWord(7, function(err, word) {
-            var title = session.gettext('question_title', game.turn + 1);
-            var subtitle = session.gettext('question_subtitle');
-            var ssml = speak(session, 'question_ssml', word);
+                var card = new builder.HeroCard(session)
+                    .title(title)
+                    .subtitle(subtitle)
+                    .buttons(gameButtons(session));
+                
+                var msg = new builder.Message(session)
+                    .speak(ssml)
+                    .addAttachment(card)
+                    .inputHint(builder.InputHint.acceptingInput);
 
-            game.turn++;
-            game.lastWord = word;
-            session.conversationData.game = game;
-
-            var card = new builder.HeroCard(session)
-                .title(title)
-                .subtitle(subtitle)
-                .buttons(gameButtons(session));
-            
-            var msg = new builder.Message(session)
-                .speak(ssml)
-                .addAttachment(card)
-                .inputHint(builder.InputHint.acceptingInput);
-
-            session.send(msg);
+                session.send(msg);
+            });
         });
     })
 )
@@ -255,15 +262,18 @@ bot.dialog('LeaderboardDialog', function (session) {
 
 bot.dialog('ChallengeDialog', [
     function (session) {
-        var game = session.dialogData.game = {
-            turn: 0,
-            score: 0,
-            lastWord: null,
-            challengeToken: "sometoken"
-        };
+        util.generateToken(function(err, token) {
+            var game = session.dialogData.game = {
+                turn: 0,
+                score: 0,
+                lastWord: null,
+                words: [],
+                challengeToken: token
+            };
 
-        builder.Prompts.text(session, 'challenge_choose', {
-            speak: speak(session, 'challenge_choose_ssml')
+            builder.Prompts.text(session, 'challenge_choose', {
+                speak: speak(session, 'challenge_choose_ssml')
+            });
         });
     },
 

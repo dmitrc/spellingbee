@@ -19,6 +19,15 @@ var wordExceptions = [
     "next"
 ];
 
+
+
+util.guid = function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
+}
+
 util.readWordStats = function (callback) {
     var client = new DocumentDBClient(config.dbEndpoint, {
         masterKey: config.dbKey
@@ -147,8 +156,65 @@ util.getChallengeScore = function (/* TODO */) {
     return 1;
 }
 
-util.addToLeaderboard = function (name, score) {
-    return;
+
+util.generateToken = function(callback) {
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    //get fixed size four positions game token
+    var token = getRandomInt(1, 9999).toString();
+    token = [ "000", "00", "0", "" ][token.length - 1] + token;
+
+    var querySpec = {
+        query: 'SELECT TOP 1 * FROM challeges c WHERE c.id=@token',
+        parameters: [{
+            name: '@token',
+            value: token
+        }]
+    };
+
+    var iter = client.queryDocuments(
+        config.dbColls.Stats,
+        querySpec);
+    iter.toArray(function (err, feed) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        if (!feed || !feed.length) {
+            // token does not exist in db - good
+            callback(null, token);
+        }
+        else {
+            // token exists in the db - generate a new one
+            generateToken(callback);
+        }
+    });
+}
+
+util.addToLeaderboard = function (name, token, words, score, callback) {
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    client.createDocument(
+        config.dbColls.Challenges,
+        {
+            id: token,
+            words: words,
+            score: score,
+            date: new Date()
+        }, function (err, doc) {
+            if (err) {
+                callback(err);
+            }
+            else 
+            {
+                callback(null, doc);
+            }
+        });
 }
 
 util.getDefinition = function (word, callback) {
