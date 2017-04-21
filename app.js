@@ -96,26 +96,26 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     })
     .matches(/sentence/i, function (session) {
         var game = session.conversationData.game;
-        var definition = util.getSentence(game.lastWord);
+        util.getSentence(game.lastWord, function(err, definition) {
+            var title = session.gettext('question_title', game.turn);
+            var subtitle = session.gettext('sentence_subtitle', definition);
 
-        var title = session.gettext('question_title', game.turn);
-        var subtitle = session.gettext('sentence_subtitle', definition);
+            var card = new builder.HeroCard(session)
+                .title(title)
+                .subtitle(subtitle)
+                .buttons([
+                    builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
+                    builder.CardAction.imBack(session, 'define', "Request definition"),
+                    builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
+                    builder.CardAction.imBack(session, 'finish', "Finish game")
+                ]);
+            var msg = new builder.Message(session)
+                .speak(subtitle)
+                .addAttachment(card)
+                .inputHint(builder.InputHint.acceptingInput);
 
-         var card = new builder.HeroCard(session)
-            .title(title)
-            .subtitle(subtitle)
-            .buttons([
-                builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                builder.CardAction.imBack(session, 'define', "Request definition"),
-                builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                builder.CardAction.imBack(session, 'finish', "Finish game")
-            ]);
-        var msg = new builder.Message(session)
-            .speak(subtitle)
-            .addAttachment(card)
-            .inputHint(builder.InputHint.acceptingInput);
-
-        session.send(msg);
+            session.send(msg);
+        });
     })
     .matches(/finish/i, function (session) {
         var game = session.conversationData.game;

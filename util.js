@@ -5,7 +5,7 @@ var config = require('./config');
 
 var util = {};
 
-var defCache = {};
+var wordCache = {};
 
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -14,7 +14,7 @@ function getRandomInt(min, max) {
 function getDictionaryDefinition (word, callback) {
     var options = {
         host: 'www.dictionaryapi.com', 
-        path: '/api/v1/references/collegiate/xml/' + word + '?key=' + config.dictionaryApiKey
+        path: '/api/v1/references/thesaurus/xml/' + word + '?key=' + config.dictionaryApiKey
     };
 
     http.request(options, function(response) {
@@ -30,16 +30,17 @@ function getDictionaryDefinition (word, callback) {
                     throw err;
                 } else {
                     var defs = [];
+                    var stcs = [];
                     
                     if('entry' in result.entry_list) {
-                        var def = result.entry_list.entry[0].def[0];
-                        for(var i = 0; i < def.dt.length; i++) {
-                            defs.push(JSON.stringify(def.dt[i]));
+                        for(var i = 0; i < result.entry_list.entry[0].sens.length; i++) {
+                            defs.push(result.entry_list.entry[0].sens[i].mc[0]);
+                            stcs.push(JSON.stringify(result.entry_list.entry[0].sens[i].vi[0]));
                         }
+                        wordCache[word] = { "defs": defs, "stcs": stcs };
                     }
                      
-                    defCache[word] = defs;
-                    callback(null, defs.length > 0 ? defs[getRandomInt(0, defs.length - 1)] : null);
+                    callback(null, defs.length > 0);
                 }
             });
         });
@@ -61,8 +62,8 @@ util.getSurvivalWord = function (diff, callback) {
             var word = result.randomDocument.word;
             console.log(word); 
 
-            getDictionaryDefinition(word, function(err, def) {
-                if(!def) {
+            getDictionaryDefinition(word, function(err, valid) {
+                if(!valid) {
                     // get a different word, one that has a definition
                     util.getSurvivalWord(diff, callback);    
                 }
@@ -85,12 +86,14 @@ util.getChallengeWord = function (challengeId, position) {
 
 util.getDefinition = function (word, callback) {
     // in-memory cache for now, should be stored in DB in the future when we implement proper definition normalization
-    var defs = defCache[word];
+    var defs = wordCache[word].defs;
     callback(null, defs[getRandomInt(0, defs.length - 1)]);
 }
 
-util.getSentence = function (word) {
-    return "Some sentence";
+util.getSentence = function (word, callback) {
+    // in-memory cache for now, should be stored in DB in the future when we implement proper definition normalization
+    var stcs = wordCache[word].stcs;
+    callback(null, stcs[getRandomInt(0, stcs.length - 1)])
 }
 
 util.getLeaderboard = function () {
