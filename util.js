@@ -7,6 +7,30 @@ var util = {};
 
 var wordCache = {};
 
+var wordStats = {};
+
+util.readWordStats = function (callback) {
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    // Query documents and take 1st item.
+    var iter = client.queryDocuments(
+        config.dbColls.Stats,
+        'SELECT TOP 1 * FROM stats s');
+    iter.toArray(function (err, feed) {
+        if (err) throw err;
+
+        if (!feed || !feed.length) {
+            throw new Error("Cannot retrieve word stats");
+        }
+        else {
+            wordStats = feed[0];
+            callback();
+        }
+    });
+}
+
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -15,13 +39,13 @@ function processSentence(vi) {
     return vi._.replace('  ', ' ' + vi.it[0] + ' ');
 }
 
-function getDictionaryDefinition (word, callback) {
+function getDictionaryDefinition(word, callback) {
     var options = {
-        host: 'www.dictionaryapi.com', 
+        host: 'www.dictionaryapi.com',
         path: '/api/v1/references/thesaurus/xml/' + word + '?key=' + config.dictionaryApiKey
     };
 
-    http.request(options, function(response) {
+    http.request(options, function (response) {
         var str = '';
 
         response.on('data', function (chunk) {
@@ -35,15 +59,15 @@ function getDictionaryDefinition (word, callback) {
                 } else {
                     var defs = [];
                     var stcs = [];
-                    
-                    if('entry' in result.entry_list) {
-                        for(var i = 0; i < result.entry_list.entry[0].sens.length; i++) {
+
+                    if ('entry' in result.entry_list) {
+                        for (var i = 0; i < result.entry_list.entry[0].sens.length; i++) {
                             defs.push(result.entry_list.entry[0].sens[i].mc[0]);
                             stcs.push(JSON.stringify(processSentence(result.entry_list.entry[0].sens[i].vi[0])));
                         }
                         wordCache[word] = { "defs": defs, "stcs": stcs };
                     }
-                     
+
                     callback(null, defs.length > 0);
                 }
             });
@@ -51,25 +75,40 @@ function getDictionaryDefinition (word, callback) {
     }).end();
 }
 
-
 util.getSurvivalWord = function (diff, callback) {
     var client = new DocumentDBClient(config.dbEndpoint, {
-                    masterKey: config.dbKey
-                });
-                
-    var sprocParams = [diff];
+        masterKey: config.dbKey
+    });
 
-    client.executeStoredProcedure(config.dbSProc.getRandomWord, sprocParams, function(err, result) {
-       if (err) {
-            throw err;
-        } else {
-            var word = result.randomDocument.word;
-            console.log(word); 
+    var querySpec = {
+        query: 'SELECT TOP 1 * FROM words w WHERE w.dif=@dif AND w.seq=@seq',
+        parameters: [{
+            name: '@dif',
+            value: diff
+        }, {
+            name: '@seq',
+            value: getRandomInt(1, wordStats[diff])
+        }]
+    };
 
-            getDictionaryDefinition(word, function(err, valid) {
-                if(!valid) {
+    var iter = client.queryDocuments(
+        config.dbColls.Words,
+        querySpec);
+
+    iter.toArray(function (err, feed) {
+        if (err) throw err;
+
+        if (!feed || !feed.length) {
+            throw new Error("Cannot retrieve word stats");
+        }
+        else {
+            var word = feed[0].word;
+            console.log(word);
+
+            getDictionaryDefinition(word, function (err, valid) {
+                if (!valid) {
                     // get a different word, one that has a definition
-                    util.getSurvivalWord(diff, callback);    
+                    util.getSurvivalWord(diff, callback);
                 }
                 else {
                     // this is a good word with a definition
@@ -79,7 +118,6 @@ util.getSurvivalWord = function (diff, callback) {
                     callback(null, word);
                 }
             });
-
         }
     });
 }
