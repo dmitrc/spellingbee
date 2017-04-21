@@ -117,9 +117,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
         session.send(msg);
     })
-    .matches(/finish/i, function (session, args) {
-        args = args || {};
-        var game = args.game || session.conversationData.game;
+    .matches(/finish/i, function (session) {
+        var game = session.conversationData.game;
 
         var title = session.gettext('finalscore_title');
         var subtitle = session.gettext('finalscore_subtitle', game.score, game.turn - 1);
@@ -130,12 +129,14 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var msg = new builder.Message(session)
             .speak(subtitle)
             .addAttachment(card)
-            .inputHint(builder.InputHint.acceptingInput);
-
+             .inputHint(builder.InputHint.acceptingInput);
+        
+        session.conversationData.game = null;
         session.send(msg).endDialog();
     })
-    .onDefault(function (session) {
-        var game = session.conversationData.game;
+    .onDefault(function (session, args) {
+        args = args || {};
+        var game = args.game || session.conversationData.game;
 
         if (!game) {
             game = {
