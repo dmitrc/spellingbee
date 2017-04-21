@@ -19,6 +19,8 @@
   "dependencies": {
     "botbuilder": "^3.8.0-beta2",
     "restify": "^4.3.0",
-    "sprintf-js": "^1.0.3"
+    "sprintf-js": "^1.0.3",
+    "documentdb": "^1.11.0",
+    "xml2js": "^0.4.17"
   }
 }

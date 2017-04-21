@@ -50,26 +50,26 @@ bot.dialog('MenuDialog', function (session) {
 bot.dialog('GameDialog', new builder.IntentDialog()
     .matches(/define/i, function (session) {
         var game = session.conversationData.game;
-        var definition = util.getDefinition(game.lastWord);
+        util.getDefinition(game.lastWord, function(err, definition){
+            var title = session.gettext('question_title', game.turn);
+            var subtitle = session.gettext('definition_subtitle', definition);
 
-        var title = session.gettext('question_title', game.turn);
-        var subtitle = session.gettext('definition_subtitle', definition);
+            var card = new builder.HeroCard(session)
+                .title(title)
+                .subtitle(subtitle)
+                .buttons([
+                    builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
+                    builder.CardAction.imBack(session, 'define', "Request definition"),
+                    builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
+                    builder.CardAction.imBack(session, 'finish', "Finish game")
+                ]);
+            var msg = new builder.Message(session)
+                .speak(subtitle)
+                .addAttachment(card)
+                .inputHint(builder.InputHint.acceptingInput);
 
-         var card = new builder.HeroCard(session)
-            .title(title)
-            .subtitle(subtitle)
-            .buttons([
-                builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                builder.CardAction.imBack(session, 'define', "Request definition"),
-                builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                builder.CardAction.imBack(session, 'finish', "Finish game")
-            ]);
-        var msg = new builder.Message(session)
-            .speak(subtitle)
-            .addAttachment(card)
-            .inputHint(builder.InputHint.acceptingInput);
-
-        session.send(msg);
+            session.send(msg);
+        });
     })
     .matches(/repeat/i, function (session) {
         var game = session.conversationData.game;
@@ -174,30 +174,31 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             session.send(msg);
         }
 
-        var word = util.getSurvivalWord();
-        var title = session.gettext('question_title', game.turn + 1);
-        var subtitle = session.gettext('question_subtitle');
-        var ssml = speak(session, 'question_ssml', word);
+        util.getSurvivalWord(7, function(err, word) {
+            var title = session.gettext('question_title', game.turn + 1);
+            var subtitle = session.gettext('question_subtitle');
+            var ssml = speak(session, 'question_ssml', word);
 
-        game.turn++;
-        game.lastWord = word;
-        session.conversationData.game = game;
+            game.turn++;
+            game.lastWord = word;
+            session.conversationData.game = game;
 
-        var card = new builder.HeroCard(session)
-            .title(title)
-            .subtitle(subtitle)
-            .buttons([
-                builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                builder.CardAction.imBack(session, 'define', "Request definition"),
-                builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                builder.CardAction.imBack(session, 'finish', "Finish game")
-            ]);
-        var msg = new builder.Message(session)
-            .speak(ssml)
-            .addAttachment(card)
-            .inputHint(builder.InputHint.acceptingInput);
+            var card = new builder.HeroCard(session)
+                .title(title)
+                .subtitle(subtitle)
+                .buttons([
+                    builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
+                    builder.CardAction.imBack(session, 'define', "Request definition"),
+                    builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
+                    builder.CardAction.imBack(session, 'finish', "Finish game")
+                ]);
+            var msg = new builder.Message(session)
+                .speak(ssml)
+                .addAttachment(card)
+                .inputHint(builder.InputHint.acceptingInput);
 
-        session.send(msg);
+            session.send(msg);
+        });
     })
 )
 .triggerAction({
