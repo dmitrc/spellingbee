@@ -10,6 +10,24 @@ function speak(session, prompt, vars) {
     return ssml.speak(localized);
 }
 
+function gameButtons(session) {
+    var game = session.conversationData.game;
+    var btns = [];
+
+    btns.push(builder.CardAction.imBack(session, 'repeat', "Repeat the word"));
+    btns.push(builder.CardAction.imBack(session, 'define', "Request definition"));
+    btns.push(builder.CardAction.imBack(session, 'sentence', "Request example sentence"));
+
+    if (game.isChallenge) {
+        btns.push(builder.CardAction.imBack(session, 'finish', "Surrender"));
+    }
+    else {
+        btns.push(builder.CardAction.imBack(session, 'finish', "Finish game"));
+    }
+
+    return btns; 
+}
+
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
    console.log('%s listening to %s', server.name, server.url); 
@@ -57,12 +75,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var card = new builder.HeroCard(session)
                 .title(title)
                 .subtitle(subtitle)
-                .buttons([
-                    builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                    builder.CardAction.imBack(session, 'define', "Request definition"),
-                    builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                    builder.CardAction.imBack(session, 'finish', "Finish game")
-                ]);
+                .buttons(gameButtons(session));
+            
             var msg = new builder.Message(session)
                 .speak(subtitle)
                 .addAttachment(card)
@@ -81,12 +95,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var card = new builder.HeroCard(session)
             .title(title)
             .subtitle(subtitle)
-            .buttons([
-                builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                builder.CardAction.imBack(session, 'define', "Request definition"),
-                builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                builder.CardAction.imBack(session, 'finish', "Finish game")
-            ]);
+            .buttons(gameButtons(session));
+        
         var msg = new builder.Message(session)
             .speak(ssml)
             .addAttachment(card)
@@ -103,12 +113,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var card = new builder.HeroCard(session)
                 .title(title)
                 .subtitle(subtitle)
-                .buttons([
-                    builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                    builder.CardAction.imBack(session, 'define', "Request definition"),
-                    builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                    builder.CardAction.imBack(session, 'finish', "Finish game")
-                ]);
+                .buttons(gameButtons(session));
+            
             var msg = new builder.Message(session)
                 .speak(subtitle)
                 .addAttachment(card)
@@ -126,34 +132,45 @@ bot.dialog('GameDialog', new builder.IntentDialog()
          var card = new builder.HeroCard(session)
             .title(title)
             .subtitle(subtitle);
+        
         var msg = new builder.Message(session)
             .speak(subtitle)
             .addAttachment(card)
-             .inputHint(builder.InputHint.acceptingInput);
+            .inputHint(builder.InputHint.acceptingInput);
         
         session.conversationData.game = null;
         session.send(msg).endDialog();
+
+        // TODO: Get name from Cortana entities
+        util.addToLeaderboard("name", game.score);
     })
     .onDefault(function (session, args) {
-        args = args || {};
-        var game = args.game || session.conversationData.game;
-
-        if (!game) {
-            game = {
-                turn: 0,
-                score: 0,
-                lastWord: "",
-                opponent: null
-            }
+        var game = {
+            turn: 0,
+            score: 0,
+            lastWord: null,
+            isChallenge: false,
+            opponent: null
+        };
+        
+        //TODO: Figure out why arguments don't get passed here from ChallengeDialog
+        if (args && args.game) {
+            game = args.game;
         }
-        else {
-            // A game is already in progress, need to show the results first
+
+        if (session.conversationData.game) {
+            game = session.conversationData.game;
+        }
+
+        if (game.lastWord) {
+            // A game is already in progress and at least one word was shown, 
+            // need to show the results first.
             var resp = session.message ? session.message.text : "";
             var answer = game.lastWord;
 
-            // (!) When spelling letter by letter, Cortana will send uppercase: SAMPLE
+            // (!) When spelling letter by letter, Cortana will send uppercase: "SAMPLE"
             // Need a way to distinguish between that, typing the answer and cheating 
-            // (so pronouncing the word itself in Cortana)
+            // (so pronouncing the word itself in Cortana : "sample")
             var isCorrect = resp.toLowerCase().indexOf(answer.toLowerCase()) > -1;
 
             if (isCorrect) {
@@ -164,9 +181,18 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
             var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
 
+            if (game.isChallenge) {
+                var score = util.getChallengeScore();
+                if (score >= 0) {
+                    // Won't be printed if no score is available yet (-1)
+                    subtitle += "\n\n" + session.gettext("challenge_score", score);
+                }
+            }
+
             var card = new builder.HeroCard(session)
                 .title(title)
                 .subtitle(subtitle);
+            
             var msg = new builder.Message(session)
                 .speak(subtitle)
                 .addAttachment(card)
@@ -175,6 +201,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             session.send(msg);
         }
 
+        //TODO: Or get challenge word, if needed
         util.getSurvivalWord(7, function(err, word) {
             var title = session.gettext('question_title', game.turn + 1);
             var subtitle = session.gettext('question_subtitle');
@@ -187,12 +214,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var card = new builder.HeroCard(session)
                 .title(title)
                 .subtitle(subtitle)
-                .buttons([
-                    builder.CardAction.imBack(session, 'repeat', "Repeat the word"),
-                    builder.CardAction.imBack(session, 'define', "Request definition"),
-                    builder.CardAction.imBack(session, 'sentence', "Request example sentence"),
-                    builder.CardAction.imBack(session, 'finish', "Finish game")
-                ]);
+                .buttons(gameButtons(session));
+            
             var msg = new builder.Message(session)
                 .speak(ssml)
                 .addAttachment(card)
@@ -233,8 +256,10 @@ bot.dialog('ChallengeDialog', [
     function (session) {
         var game = session.dialogData.game = {
             turn: 0,
-            opponent: null,
-            lastWord: null
+            score: 0,
+            lastWord: null,
+            isChallenge: true,
+            opponent: null
         };
 
         builder.Prompts.text(session, 'challenge_choose', {
@@ -260,15 +285,21 @@ bot.dialog('ChallengeDialog', [
 
         var card = new builder.HeroCard(session)
             .title('challenge_title')
-            .subtitle(subtitle)
-            .buttons([
-                builder.CardAction.imBack(session, 'menu', 'Back to menu')
-            ]);
+            .subtitle(subtitle);
+
         var msg = new builder.Message(session)
             .speak(speak(session, spokenText))
             .addAttachment(card)
             .inputHint(builder.InputHint.acceptingInput);
-        session.send(msg).endDialog();
+        
+        session.send(msg);
+
+        if (isSuccess) {
+            session.replaceDialog('GameDialog', { 'game': game });
+        }
+        else {
+            session.endDialog();
+        }
     }
 ]).triggerAction({
     matches: [

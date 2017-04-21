@@ -84,6 +84,14 @@ util.getChallengeWord = function (challengeId, position) {
     return "Sample";
 }
 
+util.getChallengeScore = function (/* TODO */) {
+    return 1;
+}
+
+util.addToLeaderboard = function (name, score) {
+    return;
+}
+
 util.getDefinition = function (word, callback) {
     // in-memory cache for now, should be stored in DB in the future when we implement proper definition normalization
     var defs = wordCache[word].defs;

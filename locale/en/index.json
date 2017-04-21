@@ -8,10 +8,10 @@
     "challenge_confirm": "Are you sure you want to challenge %s?",
     "challenge_confirm_ssml": "Are you sure you want to challenge this friend?",
     "challenge_title": "Spelling Bee - Challenge a friend",
-    "challenge_success": "Successfully challenged %s!",
-    "challenge_cancel": "Canceled the challenge to %s",
-    "challenge_success_ssml": "You have successfully challenged a friend!",
-    "challenge_cancel_ssml": "Your challenge to a friend was cancelled",
+    "challenge_success": "Successfully challenged %s!\n\nYou will now spell 10 words and your score will be recorded. Your friend will be given the same words and a chance to beat your score!",
+    "challenge_cancel": "You didn't send the challenge to %s",
+    "challenge_success_ssml": "You have successfully challenged a friend! Are you ready to spell your best?",
+    "challenge_cancel_ssml": "Your challenge to a friend was cancelled. Maybe next time?",
     "question_title": "Spelling Bee - Round %d",
     "question_subtitle": "Please pay attention to this round's word. When you are ready, type or speak your response letter by letter, or select one of the following options:",
     "question_ssml": "Here is the word for the current round, please pay attention... %s... One more time, the word is... %s ",
@@ -21,5 +21,6 @@
     "finalscore_subtitle": "Thanks for playing Spelling Bee! Your score is %d (out of possible %d).",
     "answer_correct_title": "Correct!",
     "answer_incorrect_title": "Oops!",
-    "answer_subtitle": "Your answer was %s.\n\nThe correct answer was %s.\n\nYour score so far is %d."
+    "answer_subtitle": "Your answer was %s.\n\nThe correct answer was %s.\n\nYour score so far is %d.",
+    "challenge_score": "After this question, your friend's score was %d."
 }
