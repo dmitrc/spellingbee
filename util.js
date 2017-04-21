@@ -159,12 +159,71 @@ util.getSurvivalWord = function (diff, callback) {
     });
 }
 
-util.getChallengeWord = function (challengeId, position) {
-    return "Sample";
+util.getChallengeWord = function (token, position, callback) {
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    var querySpec = {
+        query: 'SELECT TOP 1 * FROM challeges c WHERE c.id=@token',
+        parameters: [{
+            name: '@token',
+            value: token
+        }]
+    };
+
+    var iter = client.queryDocuments(
+        config.dbColls.Challenges,
+        querySpec);
+    iter.toArray(function (err, feed) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        if (!feed || !feed.length) {
+            callback("Challenge not found");
+        }
+        else {
+            if(feed[0].words.length < position) {
+                callback("Invalid word position");  // or you won the challenge ?
+            }
+            else {
+                callback(feed[0].words[position]);
+            }
+        }
+    });
 }
 
-util.getChallengeScore = function (/* TODO */) {
-    return 1;
+util.getChallengeScore = function (token, callback) {
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    var querySpec = {
+        query: 'SELECT TOP 1 * FROM challeges c WHERE c.id=@token',
+        parameters: [{
+            name: '@token',
+            value: token
+        }]
+    };
+
+    var iter = client.queryDocuments(
+        config.dbColls.Challenges,
+        querySpec);
+    iter.toArray(function (err, feed) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        if (!feed || !feed.length) {
+            callback("Challenge not found");
+        }
+        else {
+            callback(null, feed[0].score);
+        }
+    });
 }
 
 util.generateToken = function(callback) {
@@ -185,7 +244,7 @@ util.generateToken = function(callback) {
     };
 
     var iter = client.queryDocuments(
-        config.dbColls.Stats,
+        config.dbColls.Challenges,
         querySpec);
     iter.toArray(function (err, feed) {
         if (err) {
@@ -228,9 +287,34 @@ util.addToLeaderboard = function (name, token, words, score, callback) {
 }
 
 util.validateToken = function (token, callback) {
-    // callback: (valid) => void
-    // debug logic: valid if has 0 in it
-    callback(token.indexOf('0') > -1);
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    var querySpec = {
+        query: 'SELECT TOP 1 * FROM challeges c WHERE c.id=@token',
+        parameters: [{
+            name: '@token',
+            value: token
+        }]
+    };
+
+    var iter = client.queryDocuments(
+        config.dbColls.Challenges,
+        querySpec);
+    iter.toArray(function (err, feed) {
+        if (err) {
+            callback(err, false);
+            return;
+        }
+
+        if (!feed || !feed.length) {
+            callback("Challenge not found", false);
+        }
+        else {
+            callback(null, true);
+        }
+    });
 }
 
 util.getDefinition = function (word, callback) {

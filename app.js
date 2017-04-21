@@ -174,31 +174,38 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                     session.conversationData.game = game;
                 }
 
-                var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
-                var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
+                var createCard = function(err, score) {
+                    var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
+                    var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
 
-                if (game.isChallenge) {
-                    var score = util.getChallengeScore();
                     if (score >= 0) {
                         // Won't be printed if no score is available yet (-1)
                         subtitle += "\n\n" + session.gettext("challenge_score", score);
                     }
+
+                    var card = new builder.HeroCard(session)
+                        .title(title)
+                        .subtitle(subtitle)
+                        .buttons([
+                            builder.CardAction.imBack(session, 'next round', 'Next round'),
+                            builder.CardAction.imBack(session, 'finish', 'Finish game')
+                        ]);
+
+                    var msg = new builder.Message(session)
+                        .speak(subtitle)
+                        .addAttachment(card)
+                        .inputHint(builder.InputHint.acceptingInput);
+
+                    session.send(msg);
+                } 
+
+                if (game.isChallenge) {
+                    util.getChallengeScore(game.token, createCard);
+                }
+                else {
+                    createCard();
                 }
 
-                var card = new builder.HeroCard(session)
-                    .title(title)
-                    .subtitle(subtitle)
-                    .buttons([
-                        builder.CardAction.imBack(session, 'next round', 'Next round'),
-                        builder.CardAction.imBack(session, 'finish', 'Finish game')
-                    ]);
-
-                var msg = new builder.Message(session)
-                    .speak(subtitle)
-                    .addAttachment(card)
-                    .inputHint(builder.InputHint.acceptingInput);
-
-                session.send(msg);
                 return;
             }
 
@@ -312,7 +319,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
 
         function (session, results) {
             var token = results.response;
-            util.validateToken(token, function (valid) {
+            util.validateToken(token, function (err, valid) {
                 if (valid) {
                     session.conversationData.token = token;
 
