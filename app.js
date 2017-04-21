@@ -18,13 +18,6 @@ function gameButtons(session) {
     btns.push(builder.CardAction.imBack(session, 'define', "Request definition"));
     btns.push(builder.CardAction.imBack(session, 'sentence', "Request example sentence"));
 
-    if (game.isChallenge) {
-        btns.push(builder.CardAction.imBack(session, 'finish', "Surrender"));
-    }
-    else {
-        btns.push(builder.CardAction.imBack(session, 'finish', "Finish game"));
-    }
-
     return btns; 
 }
 
@@ -109,9 +102,10 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     })
     .matches(/sentence/i, function (session) {
         var game = session.conversationData.game;
-        util.getSentence(game.lastWord, function(err, definition) {
+        util.getSentence(game.lastWord, function(err, sentence) {
             var title = session.gettext('question_title', game.turn);
-            var subtitle = session.gettext('sentence_subtitle', definition);
+            var subtitle = session.gettext('sentence_subtitle', sentence.replace(game.lastWord, "<b>____</b>"));
+            var ssml = session.gettext('sentence_subtitle', sentence);
 
             var card = new builder.HeroCard(session)
                 .title(title)
@@ -130,7 +124,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var game = session.conversationData.game;
 
         var title = session.gettext('finalscore_title');
-        var subtitle = session.gettext('finalscore_subtitle', game.score, game.turn - 1);
+        var subtitle = session.gettext('finalscore_subtitle', game.score, game.turn);
 
          var card = new builder.HeroCard(session)
             .title(title)
@@ -152,8 +146,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             turn: 0,
             score: 0,
             lastWord: null,
-            isChallenge: false,
-            opponent: null
+            challengeToken: null
         };
         
         //TODO: Figure out why arguments don't get passed here from ChallengeDialog
@@ -165,10 +158,10 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             game = session.conversationData.game;
         }
 
-        if (game.lastWord) {
-            // A game is already in progress and at least one word was shown, 
-            // need to show the results first.
-            var resp = session.message ? session.message.text : "";
+        var resp = session.message ? session.message.text : "";
+        if (game.lastWord && resp.indexOf('next') < 0) {
+            // A game is already in progress, at least one word was shown, 
+            // and didn't request the next one yet, need to show the results first.
             var answer = game.lastWord;
 
             // (!) When spelling letter by letter, Cortana will send uppercase: "SAMPLE"
@@ -184,7 +177,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
             var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
 
-            if (game.isChallenge) {
+            if (game.challengeToken) {
                 var score = util.getChallengeScore();
                 if (score >= 0) {
                     // Won't be printed if no score is available yet (-1)
@@ -194,7 +187,11 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
             var card = new builder.HeroCard(session)
                 .title(title)
-                .subtitle(subtitle);
+                .subtitle(subtitle)
+                .buttons([
+                    builder.CardAction.imBack(session, 'next round', 'Next round'),
+                    builder.CardAction.imBack(session, 'finish', 'Finish game')
+                ]);
             
             var msg = new builder.Message(session)
                 .speak(subtitle)
@@ -202,6 +199,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                 .inputHint(builder.InputHint.acceptingInput);
 
             session.send(msg);
+            return;
         }
 
         //TODO: Or get challenge word, if needed
@@ -261,8 +259,7 @@ bot.dialog('ChallengeDialog', [
             turn: 0,
             score: 0,
             lastWord: null,
-            isChallenge: true,
-            opponent: null
+            challengeToken: "sometoken"
         };
 
         builder.Prompts.text(session, 'challenge_choose', {
