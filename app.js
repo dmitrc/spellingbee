@@ -214,7 +214,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
         //TODO: Or get challenge word, if needed
         util.getSurvivalWord(7, function(err, word) {
-            var title = game.challengeToken ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn + 1);
+            var title = game.challengeToken ? session.gettext('question_chtitle', game.turn + 1) : session.gettext('question_title', game.turn + 1);
             var subtitle = session.gettext('question_subtitle');
             var ssml = speak(session, 'question_ssml', word, word);
 
