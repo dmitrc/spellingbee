@@ -159,7 +159,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         }
 
         var resp = session.message ? session.message.text : "";
-        if (game.lastWord && resp.indexOf('next') < 0) {
+        if (game.lastWord && resp.toLowerCase().indexOf('next') < 0) {
             // A game is already in progress, at least one word was shown, 
             // and didn't request the next one yet, need to show the results first.
             var answer = game.lastWord;
