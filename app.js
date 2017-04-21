@@ -62,7 +62,7 @@ bot.dialog('MenuDialog', function (session) {
 });
 
 bot.dialog('GameDialog', new builder.IntentDialog()
-    .matches(/define/i, function (session) {
+    .matches(/define|definition/i, function (session) {
         var game = session.conversationData.game;
         util.getDefinition(game.lastWord, function(err, definition){
             var title = session.gettext('question_title', game.turn);
@@ -104,7 +104,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var game = session.conversationData.game;
         util.getSentence(game.lastWord, function(err, sentence) {
             var title = session.gettext('question_title', game.turn);
-            var subtitle = session.gettext('sentence_subtitle', sentence.replace(game.lastWord, "<b>____</b>"));
+            var subtitle = session.gettext('sentence_subtitle', sentence.replace(game.lastWord, "____"));
             var ssml = session.gettext('sentence_subtitle', sentence);
 
             var card = new builder.HeroCard(session)

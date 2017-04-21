@@ -9,6 +9,16 @@ var wordCache = {};
 
 var wordStats = {};
 
+// Don't serve words that contain commands that are used internally in GameDialog
+var wordExceptions = [
+    "define",
+    "definition",
+    "repeat",
+    "sentence",
+    "finish",
+    "next"
+];
+
 util.readWordStats = function (callback) {
     var client = new DocumentDBClient(config.dbEndpoint, {
         masterKey: config.dbKey
@@ -105,6 +115,14 @@ util.getSurvivalWord = function (diff, callback) {
             var word = feed[0].word;
             console.log(word);
 
+            for (var i = 0; i < wordExceptions.length; ++i) {
+                if (word.indexOf(wordExceptions[i]) > -1) {
+                    // Oh-oh, word contains a game loop command in it, which would break things
+                    util.getSurvivalWord(diff, callback);
+                    return;
+                }
+            }            
+
             getDictionaryDefinition(word, function (err, valid) {
                 if (!valid) {
                     // get a different word, one that has a definition
@@ -112,7 +130,6 @@ util.getSurvivalWord = function (diff, callback) {
                 }
                 else {
                     // this is a good word with a definition
-
                     // update db
 
                     callback(null, word);
