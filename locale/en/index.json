@@ -21,5 +21,7 @@
     "answer_correct_title": "Correct!",
     "answer_incorrect_title": "Oops!",
     "answer_subtitle": "Your answer was %s.\n\nThe correct answer was %s.\n\nYour score so far is %d.",
-    "challenge_score": "After this question, your friend's score was %d."
+    "challenge_score": "After this question, your friend's score was %d.",
+    "about_title": "Spelling Bee - About",
+    "about_subtitle": "Built with love by Dmitrii Cucleschin <dmitc> and Ondrej Stastny <ostastny> of Bing Homepage team."
 }

@@ -50,7 +50,8 @@ bot.dialog('MenuDialog', function (session) {
         .buttons([
             builder.CardAction.imBack(session, 'new game', 'New game'),
             builder.CardAction.imBack(session, 'challenge', 'Challenge a friend'),
-            builder.CardAction.imBack(session, 'leaderboard', 'Leaderboard')
+            builder.CardAction.imBack(session, 'leaderboard', 'Leaderboard'),
+            builder.CardAction.imBack(session, 'about', 'About')
         ]);
     var msg = new builder.Message(session)
         .speak(speak(session, 'menu_ssml'))
@@ -372,4 +373,26 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
         /multiplayer/i,
         /invite/i
     ]
-});
+    });
+
+bot.dialog("AboutDialog", function (session) {
+     var card = new builder.HeroCard(session)
+        .title('about_title')
+         .subtitle('about_subtitle')
+         .buttons([
+             builder.CardAction.imBack(session, 'menu', 'Back to menu')
+         ]);
+    
+    var msg = new builder.Message(session)
+        .speak(speak(session, 'about_subtitle'))
+        .addAttachment(card)
+        .inputHint(builder.InputHint.acceptingInput);
+    
+    session.send(msg).endDialog();
+}).triggerAction({
+    matches: [
+        /about/i,
+        /author/i,
+        /feedback/i
+    ]
+})
