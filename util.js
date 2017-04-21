@@ -45,6 +45,17 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+util.getRandomString = function (len) {
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    for (var i = 0; i < len; ++i) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    
+    return text;
+}
+
 function processSentence(vi) {
     return vi._.replace('  ', ' ' + vi.it[0] + ' ');
 }
@@ -145,6 +156,11 @@ util.getChallengeWord = function (challengeId, position) {
 
 util.getChallengeScore = function (/* TODO */) {
     return 1;
+}
+
+util.validateChallengeToken = function (token) {
+    // Debug logic
+    return token.toLowerCase().indexOf("d") > -1;
 }
 
 util.addToLeaderboard = function (name, score) {
