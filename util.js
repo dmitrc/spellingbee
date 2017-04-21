@@ -11,6 +11,10 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function processSentence(vi) {
+    return vi._.replace('  ', ' ' + vi.it[0] + ' ');
+}
+
 function getDictionaryDefinition (word, callback) {
     var options = {
         host: 'www.dictionaryapi.com', 
@@ -35,7 +39,7 @@ function getDictionaryDefinition (word, callback) {
                     if('entry' in result.entry_list) {
                         for(var i = 0; i < result.entry_list.entry[0].sens.length; i++) {
                             defs.push(result.entry_list.entry[0].sens[i].mc[0]);
-                            stcs.push(JSON.stringify(result.entry_list.entry[0].sens[i].vi[0]));
+                            stcs.push(JSON.stringify(processSentence(result.entry_list.entry[0].sens[i].vi[0])));
                         }
                         wordCache[word] = { "defs": defs, "stcs": stcs };
                     }
