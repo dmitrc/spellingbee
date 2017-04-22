@@ -21,6 +21,20 @@ function gameButtons(session) {
     return btns;
 }
 
+function newGame(isChallenge, token) {
+    isChallenge = Boolean(isChallenge);
+    token = token || null;
+
+    return {
+        turn: 0,
+        score: 0,
+        lastWord: null,
+        words: [],
+        isChallenge: isChallenge,
+        token: token
+    };
+}
+
 util.readWordStats(function (err) {
     if (err) {
         console.error(err);
@@ -157,8 +171,42 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         util.addToLeaderboard("name", game.token, game.words, game.score, function () { });
     })
     .onDefault(function (session, args) {
-        var gameLoop = function (game) {
+        var gameResponse = function (word) {
+            var game = session.conversationData.game;
+
+            var title = game.isChallenge ? session.gettext('question_chtitle', game.turn + 1) : session.gettext('question_title', game.turn + 1);
+            var subtitle = session.gettext('question_subtitle');
+            
+            var prominentWord = ssml.emphasis(word, null, {
+                level: "strong"
+            });
+
+            var spokentext = speak(session, 'question_ssml', prominentWord, prominentWord);
+
+            game.turn++;
+            if (game.lastWord) {
+                game.words.push(game.lastWord);
+            }
+            game.lastWord = word;
+            session.conversationData.game = game;
+
+            var card = new builder.HeroCard(session)
+                .title(title)
+                .subtitle(subtitle)
+                .buttons(gameButtons(session));
+
+            var msg = new builder.Message(session)
+                .speak(spokentext)
+                .addAttachment(card)
+                .inputHint(builder.InputHint.acceptingInput);
+
+            session.send(msg);
+        }
+
+        var gameLoop = function () {
+            var game = session.conversationData.game;
             var resp = session.message ? session.message.text.toLowerCase() : "";
+
             if (game.lastWord && resp.indexOf('next') < 0) {
                 // A game is already in progress, at least one word was shown, 
                 // and didn't request the next one yet, need to show the results first.
@@ -199,7 +247,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                     session.send(msg);
                 } 
 
-                if (game.isChallenge) {
+                if (/*game.isChallenge*/ false) {
                     util.getChallengeScore(game.token, createCard);
                 }
                 else {
@@ -209,55 +257,41 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                 return;
             }
 
-            //TODO: Or get challenge word, if needed
-            util.getSurvivalWord(7, function (err, word) {
-                var title = game.isChallenge ? session.gettext('question_chtitle', game.turn + 1) : session.gettext('question_title', game.turn + 1);
-                var subtitle = session.gettext('question_subtitle');
-                
-                var prominentWord = ssml.emphasis(word, null, {
-                    level: "strong"
+            if (/*game.isChallenge*/ false) {
+                util.getChallengeWord(game.token, game.turn, function (err, word) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+
+                    gameResponse(word);
                 });
+            }
+            else {
+                util.getSurvivalWord(7, function (err, word) {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
 
-                var spokentext = speak(session, 'question_ssml', prominentWord, prominentWord);
-
-                game.turn++;
-                if (game.lastWord) {
-                    game.words.push(game.lastWord);
-                }
-                game.lastWord = word;
-                session.conversationData.game = game;
-
-                var card = new builder.HeroCard(session)
-                    .title(title)
-                    .subtitle(subtitle)
-                    .buttons(gameButtons(session));
-
-                var msg = new builder.Message(session)
-                    .speak(spokentext)
-                    .addAttachment(card)
-                    .inputHint(builder.InputHint.acceptingInput);
-
-                session.send(msg);
-            });
+                    gameResponse(word);
+                });
+            }
         }
 
         if (session.conversationData.game) {
-            gameLoop(session.conversationData.game);
+            gameLoop();
         }
         else {
             util.generateToken(function (err, token) {
-                if (err) throw err;
+                if (err) {
+                    console.error(err);
+                    return;
+                }
 
-                var game = {
-                    turn: 0,
-                    score: 0,
-                    lastWord: null,
-                    words: [],
-                    isChallenge: false,
-                    token: token
-                };
-
-                gameLoop(game);
+                var game = newGame();
+                session.conversationData.game = game;
+                gameLoop();
             });
         }
     })
@@ -296,14 +330,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
     .matches(/start/i, function (session) {
         var token = session.conversationData.token;
         if (token) {
-            var game = {
-                turn: 0,
-                score: 0,
-                lastWord: null,
-                isChallenge: true,
-                token: token
-            };
-
+            var game = newGame(true, token);
             session.replaceDialog("GameDialog", { game: game });
         }
         else {

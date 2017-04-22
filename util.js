@@ -189,7 +189,7 @@ util.getChallengeWord = function (token, position, callback) {
                 callback("Invalid word position");  // or you won the challenge ?
             }
             else {
-                callback(feed[0].words[position]);
+                callback(null, feed[0].words[position]);
             }
         }
     });
