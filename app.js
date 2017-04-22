@@ -25,16 +25,13 @@ function cardImages(session) {
     return [builder.CardImage.create(session, 'http://i.imgur.com/k5LJvpV.png')];
 }
 
-function newGame(isChallenge, token) {
-    isChallenge = Boolean(isChallenge);
-    token = token || null;
-
+function newGame(token, challengeToken) {
     return {
         turn: 0,
         score: 0,
         lastWord: null,
         words: [],
-        isChallenge: isChallenge,
+        challengeToken: challengeToken,
         token: token
     };
 }
@@ -95,7 +92,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     .matches(/define|definition/i, function (session) {
         var game = session.conversationData.game;
         util.getDefinition(game.lastWord, function (err, definition) {
-            var title = game.isChallenge ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
+            var title = game.challengeToken ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
             var subtitle = session.gettext('definition_subtitle', definition);
 
             var card = new builder.HeroCard(session)
@@ -115,7 +112,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     .matches(/repeat/i, function (session) {
         var game = session.conversationData.game;
 
-        var title = game.isChallenge ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
+        var title = game.challengeToken ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
         var subtitle = session.gettext('question_subtitle');
 
         var prominentWord = ssml.emphasis(game.lastWord, null, {
@@ -140,7 +137,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     .matches(/sentence/i, function (session) {
         var game = session.conversationData.game;
         util.getSentence(game.lastWord, function (err, sentence) {
-            var title = game.isChallenge ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
+            var title = game.challengeToken ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
             var subtitle = session.gettext('sentence_subtitle', sentence.replace(game.lastWord, "____"));
             var ssml = session.gettext('sentence_subtitle', sentence);
 
@@ -164,7 +161,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var title = session.gettext('finalscore_title');
         var subtitle = session.gettext('finalscore_subtitle', game.score, game.turn);
 
-        if (game.isChallenge) {
+        if (game.challengeToken) {
             subtitle += "\n\n" + session.gettext('finalscore_chsubtitle');
         }
 
@@ -188,7 +185,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var gameResponse = function (word) {
             var game = session.conversationData.game;
 
-            var title = game.isChallenge ? session.gettext('question_chtitle', game.turn + 1) : session.gettext('question_title', game.turn + 1);
+            var title = game.challengeToken ? session.gettext('question_chtitle', game.turn + 1) : session.gettext('question_title', game.turn + 1);
             var subtitle = session.gettext('question_subtitle');
             
             var prominentWord = ssml.emphasis(word, null, {
@@ -267,8 +264,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                     session.send(msg);
                 } 
 
-                if (/*game.isChallenge*/ false) {
-                    util.getChallengeScore(game.token, createCard);
+                if (game.challengeToken) {
+                    util.getChallengeScore(game.challengeToken, createCard);
                 }
                 else {
                     createCard();
@@ -277,8 +274,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                 return;
             }
 
-            if (/*game.isChallenge*/ false) {
-                util.getChallengeWord(game.token, game.turn, function (err, word) {
+            if (game.challengeToken) {
+                util.getChallengeWord(game.challengeToken, game.turn, function (err, word, won) {
                     if (err) {
                         console.error(err);
                         return;
@@ -309,7 +306,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                     return;
                 }
 
-                var game = newGame();
+                var game = newGame(token);
                 session.conversationData.game = game;
                 gameLoop();
             });
@@ -349,14 +346,21 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
         session.replaceDialog('MenuDialog');
     })
     .matches(/start/i, function (session) {
-        var token = session.conversationData.token;
-        if (token) {
-            var game = newGame(true, token);
-            session.replaceDialog("GameDialog", { game: game });
-        }
-        else {
-            session.replaceDialog("MenuDialog");
-        }
+        util.generateToken(function (err, token) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            var challengeToken = session.conversationData.token;
+            if (challengeToken) {
+                var game = newGame(token, challengeToken);
+                session.replaceDialog("GameDialog", { game: game });
+            }
+            else {
+                session.replaceDialog("MenuDialog");
+            }
+        });
     })
     .matches(/join|accept/i, [
         function (session) {

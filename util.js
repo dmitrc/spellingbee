@@ -185,11 +185,11 @@ util.getChallengeWord = function (token, position, callback) {
             callback("Challenge not found");
         }
         else {
-            if(feed[0].words.length < position) {
-                callback("Invalid word position");  // or you won the challenge ?
+            if(feed[0].words.length <= position) {
+                callback(null, null, true);  // you won!
             }
             else {
-                callback(null, feed[0].words[position]);
+                callback(null, feed[0].words[position], false);
             }
         }
     });
@@ -319,14 +319,35 @@ util.validateToken = function (token, callback) {
 
 util.getDefinition = function (word, callback) {
     // in-memory cache for now, should be stored in DB in the future when we implement proper definition normalization
-    var defs = wordCache[word].defs;
-    callback(null, defs[getRandomInt(0, defs.length - 1)]);
+
+    var returnDef = function() {
+        var defs = wordCache[word].defs;
+        callback(null, defs[getRandomInt(0, defs.length - 1)]);
+    }
+
+    if(word in wordCache) {
+        returnDef();
+    }
+    else {
+        getDictionaryDefinition(word, returnDef);
+    }
+    
 }
 
 util.getSentence = function (word, callback) {
     // in-memory cache for now, should be stored in DB in the future when we implement proper definition normalization
-    var stcs = wordCache[word].stcs;
-    callback(null, stcs[getRandomInt(0, stcs.length - 1)])
+
+    var returnStsc = function() {
+        var stcs = wordCache[word].stcs;
+        callback(null, stcs[getRandomInt(0, stcs.length - 1)])
+    }
+
+    if(word in wordCache) {
+        returnStsc();
+    }
+    else {
+        getDictionaryDefinition(word, returnStsc);
+    }   
 }
 
 util.getLeaderboard = function () {
