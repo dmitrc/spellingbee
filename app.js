@@ -181,7 +181,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                 level: "strong"
             });
 
-            var spokentext = speak(session, 'question_ssml', prominentWord, prominentWord);
+            var spokentext = ssml.speak(session.gettext('question_ssml'), [game.turn + 1, prominentWord, prominentWord]);
 
             game.turn++;
             if (game.lastWord) {
@@ -205,17 +205,18 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
         var gameLoop = function () {
             var game = session.conversationData.game;
-            var resp = session.message ? session.message.text.toLowerCase() : "";
+            var resp = session.message ? util.strip(session.message.text) : "";
 
             if (game.lastWord && resp.indexOf('next') < 0) {
                 // A game is already in progress, at least one word was shown, 
                 // and didn't request the next one yet, need to show the results first.
-                var answer = game.lastWord;
+                var answer = util.strip(game.lastWord);
 
                 // (!) When spelling letter by letter, Cortana will send uppercase: "SAMPLE"
                 // Need a way to distinguish between that, typing the answer and cheating 
                 // (so pronouncing the word itself in Cortana : "sample")
-                var isCorrect = resp.toLowerCase().indexOf(answer.toLowerCase()) > -1;
+                console.log(`${resp} vs ${answer}`);
+                var isCorrect = resp.indexOf(answer) > -1;
 
                 if (isCorrect) {
                     game.score++;
@@ -224,12 +225,15 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
                 var createCard = function(err, score) {
                     var title = isCorrect ? "answer_correct_title" : "answer_incorrect_title";
-                    var subtitle = session.gettext("answer_subtitle", resp, answer, game.score);
+
+                    var subtitle = isCorrect ? session.gettext("answer_correct_subtitle", answer, util.spell(answer)) : session.gettext("answer_incorrect_subtitle", answer, util.spell(resp), util.spell(answer));
 
                     if (score >= 0) {
                         // Won't be printed if no score is available yet (-1)
                         subtitle += "\n\n" + session.gettext("challenge_score", score);
                     }
+                    
+                    subtitle += session.gettext("answer_subtitle", game.score, game.turn);    
 
                     var card = new builder.HeroCard(session)
                         .title(title)
@@ -240,7 +244,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                         ]);
 
                     var msg = new builder.Message(session)
-                        .speak(subtitle)
+                        .speak(ssml.speak(subtitle))
                         .addAttachment(card)
                         .inputHint(builder.InputHint.acceptingInput);
 
@@ -416,7 +420,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
             ]);
 
         var msg = new builder.Message(session)
-            .speak(speak(session, 'challenge_subtitle'))
+            .speak(speak(session, 'challenge_ssml'))
             .addAttachment(card)
             .inputHint(builder.InputHint.acceptingInput);
 
@@ -439,7 +443,7 @@ bot.dialog("AboutDialog", function (session) {
         ]);
 
     var msg = new builder.Message(session)
-        .speak(speak(session, 'about_subtitle'))
+        .speak(speak(session, 'about_ssml'))
         .addAttachment(card)
         .inputHint(builder.InputHint.acceptingInput);
 

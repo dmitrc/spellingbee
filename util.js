@@ -333,4 +333,21 @@ util.getLeaderboard = function () {
     return 'Leaderboard:\n\n* Ondrej - 5000 pts\n\n* Dima - 4000 pts\n\n* Satya - 3000 pts';
 }
 
+util.strip = function (s) {
+    if (s && s.length > 0) {
+        return s
+            .toLowerCase()
+            .replace(/ /g, "")
+            .replace(/\./g, "")
+            .replace(/,/g, "")
+            .replace(/-/g, "");
+    }
+}
+
+util.spell = function (s) {
+    if (s && s.length > 0) {
+        return s.split("").join(" ");
+    }
+}
+
 module.exports = util;
