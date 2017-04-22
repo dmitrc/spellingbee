@@ -21,6 +21,10 @@ function gameButtons(session) {
     return btns;
 }
 
+function cardImages(session) {
+    return [builder.CardImage.create(session, 'http://i.imgur.com/rNeCbx1.png')];
+}
+
 function newGame(isChallenge, token) {
     isChallenge = Boolean(isChallenge);
     token = token || null;
@@ -60,6 +64,7 @@ var bot = new builder.UniversalBot(connector, function (session) {
 
 bot.dialog('MenuDialog', function (session) {
     var card = new builder.HeroCard(session)
+        .images(cardImages(session))
         .title('menu_title')
         .buttons([
             builder.CardAction.imBack(session, 'new game', 'New game'),
@@ -94,6 +99,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var subtitle = session.gettext('definition_subtitle', definition);
 
             var card = new builder.HeroCard(session)
+                .images(cardImages(session))
                 .title(title)
                 .subtitle(subtitle)
                 .buttons(gameButtons(session));
@@ -114,6 +120,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var ssml = speak(session, 'question_ssml', game.lastWord);
 
         var card = new builder.HeroCard(session)
+            .images(cardImages(session))
             .title(title)
             .subtitle(subtitle)
             .buttons(gameButtons(session));
@@ -133,6 +140,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var ssml = session.gettext('sentence_subtitle', sentence);
 
             var card = new builder.HeroCard(session)
+                .images(cardImages(session))
                 .title(title)
                 .subtitle(subtitle)
                 .buttons(gameButtons(session));
@@ -156,6 +164,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         }
 
         var card = new builder.HeroCard(session)
+            .images(cardImages(session))
             .title(title)
             .subtitle(subtitle);
 
@@ -191,6 +200,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             session.conversationData.game = game;
 
             var card = new builder.HeroCard(session)
+                .images(cardImages(session))
                 .title(title)
                 .subtitle(subtitle)
                 .buttons(gameButtons(session));
@@ -236,6 +246,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                     subtitle += session.gettext("answer_subtitle", game.score, game.turn);    
 
                     var card = new builder.HeroCard(session)
+                        .images(cardImages(session))
                         .title(title)
                         .subtitle(subtitle)
                         .buttons([
@@ -309,6 +320,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
 bot.dialog('LeaderboardDialog', function (session) {
     var card = new builder.HeroCard(session)
+        .images(cardImages(session))
         .title('leaderboard_title')
         .subtitle(util.getLeaderboard())
         .buttons([
@@ -355,6 +367,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
                     session.conversationData.token = token;
 
                     var card = new builder.HeroCard(session)
+                        .images(cardImages(session))
                         .title('challenge_title')
                         .subtitle('challenge_success')
                         .buttons([
@@ -371,6 +384,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
                 }
                 else {
                     var card = new builder.HeroCard(session)
+                        .images(cardImages(session))
                         .title('challenge_title')
                         .subtitle('challenge_failure')
                         .buttons([
@@ -394,6 +408,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
             var subtitle = session.gettext('challenge_create', newToken);
 
             var card = new builder.HeroCard(session)
+                .images(cardImages(session))
                 .title('challenge_title')
                 .subtitle(subtitle)
                 .buttons([
@@ -411,6 +426,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
     })
     .onDefault(function (session) {
         var card = new builder.HeroCard(session)
+            .images(cardImages(session))
             .title('challenge_title')
             .subtitle('challenge_subtitle')
             .buttons([
@@ -436,6 +452,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
 
 bot.dialog("AboutDialog", function (session) {
     var card = new builder.HeroCard(session)
+        .images(cardImages(session))
         .title('about_title')
         .subtitle('about_subtitle')
         .buttons([
