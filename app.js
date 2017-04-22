@@ -142,7 +142,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         util.getSentence(game.lastWord, function (err, sentence) {
             var title = game.isChallenge ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
             var subtitle = session.gettext('sentence_subtitle', sentence.replace(game.lastWord, "____"));
-            var ssml = session.gettext('sentence_subtitle', sentence);
+            var spokentext = session.gettext('sentence_subtitle', sentence);
 
             var card = new builder.HeroCard(session)
                 .images(cardImages(session))
@@ -151,7 +151,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                 .buttons(gameButtons(session));
 
             var msg = new builder.Message(session)
-                .speak(subtitle)
+                .speak(spokentext)
                 .addAttachment(card)
                 .inputHint(builder.InputHint.acceptingInput);
 
