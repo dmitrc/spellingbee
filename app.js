@@ -117,7 +117,12 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
         var title = game.isChallenge ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
         var subtitle = session.gettext('question_subtitle');
-        var ssml = speak(session, 'question_ssml', game.lastWord);
+
+        var prominentWord = ssml.emphasis(game.lastWord, null, {
+            level: "strong"
+        });
+
+        var spokentext = ssml.speak(session.gettext('question_ssml'), [game.turn, prominentWord, prominentWord]);
 
         var card = new builder.HeroCard(session)
             .images(cardImages(session))
@@ -126,7 +131,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             .buttons(gameButtons(session));
 
         var msg = new builder.Message(session)
-            .speak(ssml)
+            .speak(spokentext)
             .addAttachment(card)
             .inputHint(builder.InputHint.acceptingInput);
 
