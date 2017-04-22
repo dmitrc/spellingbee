@@ -22,7 +22,7 @@ function gameButtons(session) {
 }
 
 function cardImages(session) {
-    return [builder.CardImage.create(session, 'http://i.imgur.com/rNeCbx1.png')];
+    return [builder.CardImage.create(session, 'http://i.imgur.com/k5LJvpV.png')];
 }
 
 function newGame(isChallenge, token) {
