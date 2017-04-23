@@ -195,9 +195,6 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             var spokentext = ssml.speak(session.gettext('question_ssml'), [game.turn + 1, prominentWord, prominentWord]);
 
             game.turn++;
-            if (game.lastWord) {
-                game.words.push(game.lastWord);
-            }
             game.lastWord = word;
             session.conversationData.game = game;
 
@@ -232,6 +229,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
 
                 if (isCorrect) {
                     game.score++;
+                    game.words.push(game.lastWord);
                     session.conversationData.game = game;
                 }
 
@@ -346,21 +344,31 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
         session.replaceDialog('MenuDialog');
     })
     .matches(/start/i, function (session) {
-        util.generateToken(function (err, token) {
-            if (err) {
-                console.error(err);
-                return;
-            }
 
-            var challengeToken = session.conversationData.token;
-            if (challengeToken) {
-                var game = newGame(token, challengeToken);
-                session.replaceDialog("GameDialog", { game: game });
-            }
-            else {
-                session.replaceDialog("MenuDialog");
-            }
-        });
+        if(!session.conversationData.token) {
+            // Accepting a challenge
+            util.generateToken(function (err, token) {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+
+                if(session.conversationData.challengeToken) {
+                    var game = newGame(token, session.conversationData.challengeToken);
+                    session.replaceDialog("GameDialog", { game: game });
+                }
+                else {
+                    session.replaceDialog("MenuDialog");
+                }
+            
+            });
+        }
+        else{
+            // Creating a challenge
+            var game = newGame(session.conversationData.token);
+            session.replaceDialog("GameDialog", { game: game });
+        }
+        
     })
     .matches(/join|accept/i, [
         function (session) {
@@ -373,7 +381,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
             var token = results.response;
             util.validateToken(token, function (err, valid) {
                 if (valid) {
-                    session.conversationData.token = token;
+                    session.conversationData.challengeToken = token;
 
                     var card = new builder.HeroCard(session)
                         .images(cardImages(session))
