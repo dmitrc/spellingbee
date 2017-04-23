@@ -319,18 +319,25 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     });
 
 bot.dialog('LeaderboardDialog', function (session) {
-    var card = new builder.HeroCard(session)
-        .images(cardImages(session))
-        .title('leaderboard_title')
-        .subtitle(util.getLeaderboard())
-        .buttons([
-            builder.CardAction.imBack(session, 'menu', 'Back to menu')
-        ]);
-    var msg = new builder.Message(session)
-        .speak(speak(session, 'leaderboard_ssml'))
-        .addAttachment(card)
-        .inputHint(builder.InputHint.acceptingInput);
-    session.send(msg).endDialog();
+    util.getLeaderboard(function(err, msg) { 
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        var card = new builder.HeroCard(session)
+            .images(cardImages(session))
+            .title('leaderboard_title')
+            .subtitle(msg)
+            .buttons([
+                builder.CardAction.imBack(session, 'menu', 'Back to menu')
+            ]);
+        var msg = new builder.Message(session)
+            .speak(speak(session, 'leaderboard_ssml'))
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+        session.send(msg).endDialog();
+    });
 }).triggerAction({
     matches: [
         /high scores?/i,

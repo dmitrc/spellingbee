@@ -350,8 +350,40 @@ util.getSentence = function (word, callback) {
     }   
 }
 
-util.getLeaderboard = function () {
-    return 'Leaderboard:\n\n* Ondrej - 5000 pts\n\n* Dima - 4000 pts\n\n* Satya - 3000 pts';
+util.getLeaderboard = function (callback) {
+    var client = new DocumentDBClient(config.dbEndpoint, {
+        masterKey: config.dbKey
+    });
+
+    var now = new Date();
+    var querySpec = {
+        query: 'SELECT TOP 3 c.score FROM challeges c WHERE c.date>=@start AND c.date<@end ORDER BY c.score DESC',
+        parameters: [{
+            name: '@start',
+            value: new Date(now.getFullYear(), now.getMonth(), now.getDate())   // TOOD: UTC
+        },
+        {
+            name: '@end',
+            value: new Date(now.getFullYear(), now.getMonth(), now.getDate()+1)   // TOOD: UTC
+        }]
+    };
+
+    var iter = client.queryDocuments(
+        config.dbColls.Challenges,
+        querySpec);
+    iter.toArray(function (err, feed) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        if (!feed || !feed.length) {
+            callback("Challenge not found");
+        }
+        else {
+            callback(null, JSON.stringify(feed));
+        }
+    });
 }
 
 util.strip = function (s) {
