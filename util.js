@@ -28,6 +28,11 @@ util.guid = function() {
     });
 }
 
+util.calculateDifficulty = function(turn) {
+    // Interpolate between 5 and 20 words
+    return 5 + Math.min(turn, 15); 
+}
+
 util.readWordStats = function (callback) {
     var client = new DocumentDBClient(config.dbEndpoint, {
         masterKey: config.dbKey
@@ -67,8 +72,8 @@ util.getRandomString = function (len) {
 
 function processSentence(vi) {
     return { 
-        spoken: vi._.replace('  ', ' ' + vi.it[0] + ' '), 
-        text: vi._.replace('  ', ' ____ ') 
+        spoken: vi._.replace(/^\s|\s\s|\s$/g, ' ' + vi.it[0] + ' '), 
+        text: vi._.replace(/^\s|\s\s|\s$/g, ' ____ ') 
     };
 }
 

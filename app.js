@@ -368,7 +368,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                         .title(title)
                         .subtitle(subtitle)
                         .buttons([
-                            builder.CardAction.imBack(session, 'next round', 'Next round'),
+                            builder.CardAction.imBack(session, 'next word', 'Next word'),
                             builder.CardAction.imBack(session, 'finish', 'Finish game')
                         ]);
 
@@ -416,7 +416,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
                 });
             }
             else {
-                util.getSurvivalWord(7, function (err, word) {
+                util.getSurvivalWord(util.calculateDifficulty(game.turn), function (err, word) {
                     if (err) {
                         console.error(err);
                         return;
