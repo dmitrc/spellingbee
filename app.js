@@ -493,7 +493,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
         },
 
         function (session, results) {
-            var token = results.response;
+            var token = util.strip(results.response);
             util.validateToken(token, function (err, valid) {
                 if (valid) {
                     session.dialogData.challengeToken = token;

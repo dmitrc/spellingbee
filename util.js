@@ -393,6 +393,8 @@ util.strip = function (s) {
             .replace(/ /g, "")
             .replace(/\./g, "")
             .replace(/,/g, "")
+            .replace(/\?/g, "")
+            .replace(/!/g, "")
             .replace(/-/g, "");
     }
 }
