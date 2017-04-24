@@ -197,11 +197,10 @@ bot.dialog('NameDialog', [
     },
 
     function (session, results) {
-        var name = results.response;
+        var name = util.strip(results.response);
         if (name) {
             // Saving name forever and ever!!!
             session.userData.name = name;
-
             session.replaceDialog('MenuDialog');
         }
     }
@@ -318,12 +317,12 @@ bot.dialog('GameDialog', new builder.IntentDialog()
     .onDefault(function (session) {
         var gameLoop = function () {
             var game = getGame(session);
-            var resp = session.message ? util.strip(session.message.text) : "";
+            var resp = session.message ? util.strip(session.message.text).toLowerCase() : "";
 
             if (resp && resp.indexOf('next') < 0 && game.lastWord) {
                 // A game is already in progress, at least one word was shown, 
                 // and didn't request the next one yet, need to show the results first.
-                var answer = util.strip(game.lastWord);
+                var answer = util.strip(game.lastWord).toLowerCase();
 
                 // Still waiting for 'next' or 'finish' from previous round                
                 if (game.isIdle) {
