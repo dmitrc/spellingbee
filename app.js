@@ -492,7 +492,7 @@ bot.dialog('ChallengeDialog', new builder.IntentDialog()
             return;
         }
 
-        next && next;
+        next && next();
     })    
     .matches(/menu/i, function (session) {
         session.replaceDialog('MenuDialog');
