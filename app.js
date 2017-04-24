@@ -267,8 +267,8 @@ bot.dialog('GameDialog', new builder.IntentDialog()
         var game = getGame(session);
         util.getSentence(game.lastWord, function (err, sentence) {
             var title = game.challengeToken ? session.gettext('question_chtitle', game.turn) : session.gettext('question_title', game.turn);
-            var subtitle = session.gettext('sentence_subtitle', sentence.replace(game.lastWord, "____"));
-            var spokentext = session.gettext('sentence_subtitle', sentence);
+            var subtitle = session.gettext('sentence_subtitle', sentence.text);
+            var spokentext = session.gettext('sentence_subtitle', sentence.spoken);
 
             var card = new builder.HeroCard(session)
                 .images(cardImages(session))
@@ -456,13 +456,6 @@ bot.dialog('LeaderboardDialog', function (session) {
         if (err) {
             console.error(err);
             return;
-        }
-
-        //TODO: Need to gather (some) names and pretty print the msg here before we show it live
-        // Until then, printing demo string
-        var isDemo = true;
-        if (isDemo) {
-            msg = "- Satya N : 92 pts\n\n- Dmitrii C : 82 pts\n\n- Ondrej S : 81 pts\n\n- Mark Z : 2 pts";
         }
 
         var card = new builder.HeroCard(session)

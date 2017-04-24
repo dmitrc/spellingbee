@@ -66,7 +66,10 @@ util.getRandomString = function (len) {
 }
 
 function processSentence(vi) {
-    return vi._.replace('  ', ' ' + vi.it[0] + ' ');
+    return { 
+        spoken: vi._.replace('  ', ' ' + vi.it[0] + ' '), 
+        text: vi._.replace('  ', ' ____ ') 
+    };
 }
 
 function getDictionaryDefinition(word, callback) {
@@ -93,7 +96,7 @@ function getDictionaryDefinition(word, callback) {
                     if ('entry' in result.entry_list) {
                         for (var i = 0; i < result.entry_list.entry[0].sens.length; i++) {
                             defs.push(result.entry_list.entry[0].sens[i].mc[0]);
-                            stcs.push(JSON.stringify(processSentence(result.entry_list.entry[0].sens[i].vi[0])));
+                            stcs.push(processSentence(result.entry_list.entry[0].sens[i].vi[0]));
                         }
                         wordCache[word] = { "defs": defs, "stcs": stcs };
                     }
@@ -272,6 +275,7 @@ util.addToLeaderboard = function (name, token, words, score, callback) {
         config.dbColls.Challenges,
         {
             id: token,
+            name: name,
             words: words,
             score: score,
             date: new Date()
@@ -357,7 +361,7 @@ util.getLeaderboard = function (callback) {
 
     var now = new Date();
     var querySpec = {
-        query: 'SELECT TOP 3 c.score FROM challeges c WHERE c.date>=@start AND c.date<@end ORDER BY c.score DESC',
+        query: 'SELECT TOP 5 c.name, c.score FROM challeges c WHERE c.date>=@start AND c.date<@end ORDER BY c.score DESC',
         parameters: [{
             name: '@start',
             value: new Date(now.getFullYear(), now.getMonth(), now.getDate())   // TOOD: UTC
@@ -381,7 +385,13 @@ util.getLeaderboard = function (callback) {
             callback("Challenge not found");
         }
         else {
-            callback(null, JSON.stringify(feed));
+            var str = '';
+            for(var i = 0; i < feed.length; i++) {
+                var name = feed[i].name || 'Anonymous';
+                str += ' [' + name + ' : ' + feed[i].score + '] ';
+            }
+
+            callback(null, str);
         }
     });
 }
