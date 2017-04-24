@@ -47,11 +47,8 @@ function getGame(session) {
     return session.dialogData.game;
 }
 
-function randomName() {
-    var names = ["Jeanett", "Bruno", "Shakita", "Beaulah", "Nobuko", "Adolfo", "Denae", "Misha", "Jonathon", "Odilia", "Gale", "Kori", "Renato", "Joesph", "Racquel", "Claude", "Colleen", "Ambrose", "Penney", "Leanna", "Letitia", "Caroyln", "Marcelene", "Rickie", "Tobie", "Ava", "Wallace", "Rusty", "Verena", "Magdalene", "Lise", "Latoyia", "Mariam", "Keely", "Karlyn", "Rosanne", "Chi", "Amparo", "Mac", "Tiffani", "Tyesha", "Jaqueline", "Kam", "Carlita", "Debby", "Eartha", "Jeffrey", "Shawnta", "Ursula", "Amal"];
-    var i = util.getRandomInt(0, names.length - 1);
-
-    return names[i];
+function getName(session) {
+    return session.userData.name ? session.userData.name : "Anonymous";
 }
 
 var gameOver = function (session) {
@@ -95,8 +92,7 @@ var gameOver = function (session) {
         .addAttachment(card)
         .inputHint(builder.InputHint.acceptingInput);
 
-    // TODO: Get name from Cortana entities
-    util.addToLeaderboard(randomName(), game.token, game.words, game.score, function () { });
+    util.addToLeaderboard(getName(session), game.token, game.words, game.score, function () { });
     saveGame(session, null);
     session.send(msg).endDialog();
 }
@@ -131,6 +127,15 @@ var gamePrompt = function (session, word) {
     session.send(msg);
 }
 
+var promptNameIfNeeded = function(session) {
+    if (!getName(session)) {
+        session.replaceDialog('NameDialog');
+        return true;
+    }
+
+    return false;
+}
+
 util.readWordStats(function (err) {
     if (err) {
         console.error(err);
@@ -149,15 +154,20 @@ var connector = new builder.ChatConnector({
 
 server.post('/api/messages', connector.listen());
 
-var bot = new builder.UniversalBot(connector, function (session) {
-    // Default: open main menu
+var bot = new builder.UniversalBot(connector, function (session) { 
+    // default case: open menu dialog
     session.replaceDialog('MenuDialog');
 });
 
 bot.dialog('MenuDialog', function (session) {
+    if (promptNameIfNeeded(session)) {
+        return;
+    }
+
     var card = new builder.HeroCard(session)
         .images(cardImages(session))
         .title('menu_title')
+        .subtitle('menu_subtitle', getName(session))
         .buttons([
             builder.CardAction.imBack(session, 'new game', 'New game'),
             builder.CardAction.imBack(session, 'challenge', 'Challenge a friend'),
@@ -174,10 +184,32 @@ bot.dialog('MenuDialog', function (session) {
         /help/i,
         /menu/i
     ]
-});
+    });
+
+bot.dialog('NameDialog', [
+    function (session) {
+        builder.Prompts.text(session, 'input_name', {
+            speak: speak(session, 'input_name_ssml')
+        });
+    },
+
+    function (session, results) {
+        var name = results.response;
+        if (name) {
+            // Saving name forever and ever!!!
+            session.userData.name = name;
+
+            session.replaceDialog('MenuDialog');
+        }
+    }
+])
 
 bot.dialog('GameDialog', new builder.IntentDialog()
     .onBegin(function (session, args, next) {
+        if (promptNameIfNeeded(session)) {
+            return;
+        }
+
         if (args && args.game) {
             saveGame(session, args.game);
         }
@@ -276,9 +308,7 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             .addAttachment(card)
             .inputHint(builder.InputHint.acceptingInput);
 
-        // TODO: Get name from Cortana entities
-        util.addToLeaderboard(randomName(), game.token, game.words, game.score, function () { });
-
+        util.addToLeaderboard(getName(session), game.token, game.words, game.score, function () { });
         saveGame(session, null);
         session.send(msg).endDialog();
     })
@@ -455,6 +485,13 @@ bot.dialog('LeaderboardDialog', function (session) {
 });
 
 bot.dialog('ChallengeDialog', new builder.IntentDialog()
+    .onBegin(function (session, args, next) {
+        if (promptNameIfNeeded(session)) {
+            return;
+        }
+
+        next && next;
+    })    
     .matches(/menu/i, function (session) {
         session.replaceDialog('MenuDialog');
     })
@@ -604,4 +641,35 @@ bot.dialog("AboutDialog", function (session) {
         /author/i,
         /feedback/i
     ]
-})
+});
+
+bot.dialog('DebugDialog', [
+    function (session) {
+        builder.Prompts.confirm(session, "Are you sure you wish to clear your user data?");
+    },
+
+    function (session, results) {
+        if (results.response) {
+            session.userData = {};
+        }
+
+       var card = new builder.HeroCard(session)
+        .images(cardImages(session))
+        .title('Debug')
+        .subtitle(`User data ${results.response ? " " : "not "} cleaned.`)
+        .buttons([
+            builder.CardAction.imBack(session, 'menu', 'Back to menu')
+        ]);
+
+    var msg = new builder.Message(session)
+        .speak(speak(session, 'about_ssml'))
+        .addAttachment(card)
+           .inputHint(builder.InputHint.acceptingInput);
+        
+    session.send(msg).endDialog();
+    }
+]).triggerAction({
+    matches: [
+        /debug/i
+    ]
+});

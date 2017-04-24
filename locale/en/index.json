@@ -1,5 +1,6 @@
 {
     "menu_title": "Main menu",
+    "menu_subtitle": "Welcome back, %s!",
     "menu_ssml": "Welcome to the Spelling Bee! I am Cortana and I will be your host today! Say \"new game\" to get started or choose one of the following options: \"challenge\", \"leaderboard\", \"about\". Depending on the device you have, you can say, type or select these options on the screen - give it a try!",
     "leaderboard_title": "Leaderboard",
     "leaderboard_ssml": "This is the global leaderboard, our own little Hall of Fame for the best spellers out there. Is your name in this list yet? Remember, practice makes perfect!",
@@ -50,5 +51,7 @@
     "gameover_loss": "I am sorry, but your score of %d points did not break your friend's high score of %d points. Study some more and try again later?",
     "gameover_loss_ssml": "I am sorry, but your score of %d points did not break your friend's high score of %d points. Study some more and try again later?",
     "gameover_draw": "Looks like it's a draw! Both you and your friend are sharing the high score of %d points. I guess this one will have to be settled over rock-paper-scissors?",
-    "gameover_draw_ssml": "Looks like it's a draw! Both you and your friend are sharing the high score of %d points. I guess this one will have to be settled over rock-paper-scissors?"
+    "gameover_draw_ssml": "Looks like it's a draw! Both you and your friend are sharing the high score of %d points. I guess this one will have to be settled over rock-paper-scissors?",
+    "input_name": "Hello! It looks like this is the first time you're launching Spelling Bee. Welcome, we are happy to have you here! What's your name?",
+    "input_name_ssml": "Hello! It looks like this is the first time you're launching Spelling Bee. Welcome, we are happy to have you here! What's your name?"
 }
