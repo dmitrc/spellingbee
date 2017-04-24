@@ -128,7 +128,7 @@ var gamePrompt = function (session, word) {
 }
 
 var promptNameIfNeeded = function(session) {
-    if (!getName(session)) {
+    if (!session.userData.name) {
         session.replaceDialog('NameDialog');
         return true;
     }
@@ -155,7 +155,10 @@ var connector = new builder.ChatConnector({
 server.post('/api/messages', connector.listen());
 
 var bot = new builder.UniversalBot(connector, function (session) { 
-    // default case: open menu dialog
+    if (promptNameIfNeeded(session)) {
+        return;
+    }
+
     session.replaceDialog('MenuDialog');
 });
 
@@ -645,7 +648,10 @@ bot.dialog("AboutDialog", function (session) {
 
 bot.dialog('DebugDialog', [
     function (session) {
-        builder.Prompts.confirm(session, "Are you sure you wish to clear your user data?");
+        var str = "Are you sure you wish to clear your user data?";
+        builder.Prompts.confirm(session, str, {
+            speak: ssml.speak(str)
+        });
     },
 
     function (session, results) {
@@ -653,20 +659,21 @@ bot.dialog('DebugDialog', [
             session.userData = {};
         }
 
-       var card = new builder.HeroCard(session)
-        .images(cardImages(session))
-        .title('Debug')
-        .subtitle(`User data ${results.response ? " " : "not "} cleaned.`)
-        .buttons([
-            builder.CardAction.imBack(session, 'menu', 'Back to menu')
-        ]);
+        var str = `User data ${results.response ? " " : "not "} cleaned.`;
+        var card = new builder.HeroCard(session)
+            .images(cardImages(session))
+            .title('Debug')
+            .subtitle(str)
+            .buttons([
+                builder.CardAction.imBack(session, 'menu', 'Back to menu')
+            ]);
 
-    var msg = new builder.Message(session)
-        .speak(speak(session, 'about_ssml'))
-        .addAttachment(card)
-           .inputHint(builder.InputHint.acceptingInput);
-        
-    session.send(msg).endDialog();
+        var msg = new builder.Message(session)
+            .speak(ssml.speak(str))
+            .addAttachment(card)
+            .inputHint(builder.InputHint.acceptingInput);
+            
+        session.send(msg).endDialog();
     }
 ]).triggerAction({
     matches: [
