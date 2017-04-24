@@ -186,7 +186,7 @@ util.getChallengeWord = function (token, position, callback) {
         }
         else {
             if(feed[0].words.length <= position) {
-                callback(null, null, true);  // you won!
+                callback(null, null, true);  // ran out of words -> now compare the scores
             }
             else {
                 callback(null, feed[0].words[position], false);
