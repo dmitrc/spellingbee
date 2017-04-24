@@ -50,7 +50,7 @@ util.readWordStats = function (callback) {
     });
 }
 
-function getRandomInt(min, max) {
+util.getRandomInt = function(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -117,7 +117,7 @@ util.getSurvivalWord = function (diff, callback) {
             value: diff
         }, {
             name: '@seq',
-            value: getRandomInt(1, wordStats[diff])
+            value: util.getRandomInt(1, wordStats[diff])
         }]
     };
 
@@ -232,7 +232,7 @@ util.generateToken = function(callback) {
     });
 
     //get fixed size four positions game token
-    var token = getRandomInt(1, 9999).toString();
+    var token = util.getRandomInt(1, 9999).toString();
     token = [ "000", "00", "0", "" ][token.length - 1] + token;
 
     var querySpec = {
@@ -322,7 +322,7 @@ util.getDefinition = function (word, callback) {
 
     var returnDef = function() {
         var defs = wordCache[word].defs;
-        callback(null, defs[getRandomInt(0, defs.length - 1)]);
+        callback(null, defs[util.getRandomInt(0, defs.length - 1)]);
     }
 
     if(word in wordCache) {
@@ -339,7 +339,7 @@ util.getSentence = function (word, callback) {
 
     var returnStsc = function() {
         var stcs = wordCache[word].stcs;
-        callback(null, stcs[getRandomInt(0, stcs.length - 1)])
+        callback(null, stcs[util.getRandomInt(0, stcs.length - 1)])
     }
 
     if(word in wordCache) {

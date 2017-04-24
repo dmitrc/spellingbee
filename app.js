@@ -47,6 +47,13 @@ function getGame(session) {
     return session.dialogData.game;
 }
 
+function randomName() {
+    var names = ["Jeanett", "Bruno", "Shakita", "Beaulah", "Nobuko", "Adolfo", "Denae", "Misha", "Jonathon", "Odilia", "Gale", "Kori", "Renato", "Joesph", "Racquel", "Claude", "Colleen", "Ambrose", "Penney", "Leanna", "Letitia", "Caroyln", "Marcelene", "Rickie", "Tobie", "Ava", "Wallace", "Rusty", "Verena", "Magdalene", "Lise", "Latoyia", "Mariam", "Keely", "Karlyn", "Rosanne", "Chi", "Amparo", "Mac", "Tiffani", "Tyesha", "Jaqueline", "Kam", "Carlita", "Debby", "Eartha", "Jeffrey", "Shawnta", "Ursula", "Amal"];
+    var i = util.getRandomInt(0, names.length - 1);
+
+    return names[i];
+}
+
 var gameOver = function (session) {
     var game = getGame(session);
 
@@ -88,6 +95,9 @@ var gameOver = function (session) {
         .addAttachment(card)
         .inputHint(builder.InputHint.acceptingInput);
 
+    // TODO: Get name from Cortana entities
+    util.addToLeaderboard(randomName(), game.token, game.words, game.score, function () { });
+    saveGame(session, null);
     session.send(msg).endDialog();
 }
 
@@ -266,11 +276,11 @@ bot.dialog('GameDialog', new builder.IntentDialog()
             .addAttachment(card)
             .inputHint(builder.InputHint.acceptingInput);
 
+        // TODO: Get name from Cortana entities
+        util.addToLeaderboard(randomName(), game.token, game.words, game.score, function () { });
+
         saveGame(session, null);
         session.send(msg).endDialog();
-
-        // TODO: Get name from Cortana entities
-        util.addToLeaderboard("name", game.token, game.words, game.score, function () { });
     })
     .onDefault(function (session) {
         var gameLoop = function () {
@@ -414,6 +424,13 @@ bot.dialog('LeaderboardDialog', function (session) {
         if (err) {
             console.error(err);
             return;
+        }
+
+        //TODO: Need to gather (some) names and pretty print the msg here before we show it live
+        // Until then, printing demo string
+        var isDemo = true;
+        if (isDemo) {
+            msg = "- Satya N : 92 pts\n\n- Dmitrii C : 82 pts\n\n- Ondrej S : 81 pts\n\n- Mark Z : 2 pts";
         }
 
         var card = new builder.HeroCard(session)
