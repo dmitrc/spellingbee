@@ -7,8 +7,6 @@ var util = {};
 
 var wordCache = {};
 
-var wordStats = {};
-
 // Don't serve words that contain commands that are used internally in GameDialog
 var wordExceptions = [
     "define",
@@ -31,28 +29,6 @@ util.guid = function() {
 util.calculateDifficulty = function(turn) {
     // Interpolate between 5 and 20 words
     return 5 + Math.min(turn, 15); 
-}
-
-util.readWordStats = function (callback) {
-    var client = new DocumentDBClient(config.dbEndpoint, {
-        masterKey: config.dbKey
-    });
-
-    // Query documents and take 1st item.
-    var iter = client.queryDocuments(
-        config.dbColls.Stats,
-        'SELECT TOP 1 * FROM stats s');
-    iter.toArray(function (err, feed) {
-        if (err) throw err;
-
-        if (!feed || !feed.length) {
-            throw new Error("Cannot retrieve word stats");
-        }
-        else {
-            wordStats = feed[0];
-            callback();
-        }
-    });
 }
 
 util.getRandomInt = function(min, max) {
@@ -79,8 +55,12 @@ function processSentence(vi) {
 
 function getDictionaryDefinition(word, callback) {
     var options = {
-        host: 'www.dictionaryapi.com',
-        path: '/api/v1/references/thesaurus/xml/' + word + '?key=' + config.dictionaryApiKey
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        host: 'api.wordnik.com',
+        path: '/v4/word.json/' + word + '/definitions?limit=3&includeRelated=false&sourceDictionaries=wordnet&useCanonical=false&includeTags=false&api_key=' + config.dictionaryApiKey 
     };
 
     http.request(options, function (response) {
@@ -91,80 +71,98 @@ function getDictionaryDefinition(word, callback) {
         });
 
         response.on('end', function () {
-            xml.parseString(str, function (err, result) {
-                if (err) {
-                    throw err;
-                } else {
-                    var defs = [];
-                    var stcs = [];
+            var jsonResp = JSON.parse(str);
+            var defs = [];
 
-                    if ('entry' in result.entry_list) {
-                        for (var i = 0; i < result.entry_list.entry[0].sens.length; i++) {
-                            defs.push(result.entry_list.entry[0].sens[i].mc[0]);
-                            stcs.push(processSentence(result.entry_list.entry[0].sens[i].vi[0]));
-                        }
-                        wordCache[word] = { "defs": defs, "stcs": stcs };
-                    }
+            for(var i = 0; i < jsonResp.length; i++) {
+                defs.push(jsonResp[i].text);
+            }
+            
+            if(!(word in wordCache)) {
+                 wordCache[word] = { "defs": [], "stcs": [] };
+            }
+            wordCache[word].defs = defs;
 
-                    callback(null, defs.length > 0);
-                }
-            });
+            callback(null, defs.length > 0);
         });
     }).end();
 }
 
-util.getSurvivalWord = function (diff, callback) {
-    var client = new DocumentDBClient(config.dbEndpoint, {
-        masterKey: config.dbKey
-    });
-
-    var querySpec = {
-        query: 'SELECT TOP 1 * FROM words w WHERE w.dif=@dif AND w.seq=@seq',
-        parameters: [{
-            name: '@dif',
-            value: diff
-        }, {
-            name: '@seq',
-            value: util.getRandomInt(1, wordStats[diff])
-        }]
+function getDictionarySentence(word, callback) {
+    var options = {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        host: 'api.wordnik.com',
+        path: '/v4/word.json/' + word + '/examples?includeDuplicates=false&useCanonical=false&skip=0&limit=3&api_key=' + config.dictionaryApiKey 
     };
 
-    var iter = client.queryDocuments(
-        config.dbColls.Words,
-        querySpec);
+    http.request(options, function (response) {
+        var str = '';
 
-    iter.toArray(function (err, feed) {
-        if (err) throw err;
+        response.on('data', function (chunk) {
+            str += chunk;
+        });
 
-        if (!feed || !feed.length) {
-            throw new Error("Cannot retrieve word stats");
-        }
-        else {
-            var word = feed[0].word;
-            console.log(word);
+        response.on('end', function () {
+            var jsonResp = JSON.parse(str);
+            var stcs = [];
 
-            for (var i = 0; i < wordExceptions.length; ++i) {
-                if (word.indexOf(wordExceptions[i]) > -1) {
-                    // Oh-oh, word contains a game loop command in it, which would break things
-                    util.getSurvivalWord(diff, callback);
-                    return;
+            for(var i = 0; i < jsonResp.examples.length; i++) {
+
+                var sentence = jsonResp.examples[i].text;
+
+                stcs.push({ spoken: sentence, text: sentence.replace(new RegExp(word, "g"), '___') });
+            }
+            
+            if(!(word in wordCache)) {
+                 wordCache[word] = { "defs": [], "stcs": [] };
+            }
+            wordCache[word].stcs = stcs;
+
+            callback(null, stcs.length > 0);
+        });
+    }).end();
+}
+
+
+util.getSurvivalWord = function (diff, callback) {
+    var options = {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        host: 'api.wordnik.com',
+        path: '/v4/words.json/randomWord?hasDictionaryDef=true&includePartOfSpeech=noun,adjective,verb&excludePartOfSpeech=noun-posessive,proper-noun,proper-noun-plural,proper-noun-posessive,given-name,family-name&minCorpusCount=100&maxCorpusCount=-1&minDictionaryCount=6&maxDictionaryCount=6&minLength=' + diff + '&maxLength=' + diff +'&api_key=' + config.dictionaryApiKey 
+    };
+
+    http.request(options, function (response) {
+        var str = '';
+
+        response.on('data', function (chunk) {
+            str += chunk;
+        });
+
+        response.on('end', function () {
+            var jsonResp = JSON.parse(str);
+
+            if(jsonResp == null || !("word" in jsonResp))
+                callback("Error getting a word");
+            else {
+                for (var i = 0; i < wordExceptions.length; ++i) {
+                    if (jsonResp.word.indexOf(wordExceptions[i]) > -1) {
+                        // Oh-oh, word contains a game loop command in it, which would break things
+                        util.getSurvivalWord(diff, callback);
+                        return;
+                    }
                 }
-            }            
-
-            getDictionaryDefinition(word, function (err, valid) {
-                if (!valid) {
-                    // get a different word, one that has a definition
-                    util.getSurvivalWord(diff, callback);
-                }
-                else {
-                    // this is a good word with a definition
-                    // update db
-
-                    callback(null, word);
-                }
-            });
-        }
-    });
+                
+                console.log(jsonResp.word);
+                callback(null, jsonResp.word);
+            }
+        });
+    }).end();
 }
 
 util.getChallengeWord = function (token, position, callback) {
@@ -334,7 +332,7 @@ util.getDefinition = function (word, callback) {
         callback(null, defs[util.getRandomInt(0, defs.length - 1)]);
     }
 
-    if(word in wordCache) {
+    if(word in wordCache && wordCache[word].defs.length > 0) {
         returnDef();
     }
     else {
@@ -351,11 +349,11 @@ util.getSentence = function (word, callback) {
         callback(null, stcs[util.getRandomInt(0, stcs.length - 1)])
     }
 
-    if(word in wordCache) {
+    if(word in wordCache && wordCache[word].stcs.length > 0) {
         returnStsc();
     }
     else {
-        getDictionaryDefinition(word, returnStsc);
+        getDictionarySentence(word, returnStsc);
     }   
 }
 
